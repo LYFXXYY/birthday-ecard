@@ -1,0 +1,134 @@
+import { Router } from 'express';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { success, error } from '../utils/response.js';
+import { authMiddleware } from '../middlewares/auth.js';
+import { Template } from '../models/index.js';
+
+const router = Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 所有模板路由需要认证
+router.use(authMiddleware);
+
+/**
+ * 白名单过滤：防止mass assignment攻击
+ * 只允许更新模型的合法字段
+ */
+const TEMPLATE_FIELDS = [
+  'name', 'description', 'match_gender',
+  'match_age_min', 'match_age_max', 'match_interests',
+  'html_content', 'preview_image', 'is_active'
+];
+
+const sanitizeInput = (obj) => {
+  const sanitized = {};
+  for (const key of TEMPLATE_FIELDS) {
+    if (obj.hasOwnProperty(key)) {
+      sanitized[key] = obj[key];
+    }
+  }
+  return sanitized;
+};
+
+// GET /api/templates - 获取模板列表（不返回html_content）
+router.get('/', async (req, res) => {
+  try {
+    const templates = await Template.findAll({
+      attributes: ['id', 'name', 'description', 'match_gender', 'match_age_min', 'match_age_max', 'is_active', 'created_at']
+    });
+    success(res, templates);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// GET /api/templates/:id - 获取模板详情（包含html_content）
+router.get('/:id', async (req, res) => {
+  try {
+    const template = await Template.findByPk(req.params.id);
+    
+    if (!template) {
+      return error(res, '模板不存在', 404);
+    }
+
+    success(res, template);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// POST /api/templates - 新增模板
+router.post('/', async (req, res) => {
+  try {
+    const template = await Template.create(sanitizeInput(req.body));
+    success(res, template, '添加成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// PUT /api/templates/:id - 修改模板
+router.put('/:id', async (req, res) => {
+  try {
+    const [updated] = await Template.update(
+      sanitizeInput(req.body),
+      { where: { id: req.params.id } }
+    );
+    
+    if (!updated) {
+      return error(res, '模板不存在', 404);
+    }
+
+    success(res, null, '修改成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// DELETE /api/templates/:id - 删除模板
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Template.destroy({ where: { id: req.params.id } });
+    
+    if (!deleted) {
+      return error(res, '模板不存在', 404);
+    }
+
+    success(res, null, '删除成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// GET /api/templates/:id/preview - 预览模板渲染效果
+router.get('/:id/preview', async (req, res) => {
+  try {
+    const template = await Template.findByPk(req.params.id);
+    
+    if (!template) {
+      return error(res, '模板不存在', 404);
+    }
+
+    // 使用示例数据替换占位符
+    let html = template.html_content;
+    const replacements = {
+      '{{name}}': '张三',
+      '{{department}}': '技术部',
+      '{{blessing}}': '祝你生日快乐，万事如意！',
+      '{{year}}': new Date().getFullYear().toString()
+    };
+
+    for (const [placeholder, value] of Object.entries(replacements)) {
+      html = html.replaceAll(placeholder, value);
+    }
+
+    res.type('text/html').send(html);
+  } catch (err) {
+    error(res, err.message, 500);
+  }
+});
+
+export default router;
