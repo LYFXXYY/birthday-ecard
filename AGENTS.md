@@ -14,15 +14,23 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|------------|
-| Backend | Node.js + Express |
-| Frontend | Vue 3 + Element Plus + Vite |
-| Database | MySQL + Sequelize ORM |
-| Authentication | JWT (jsonwebtoken + bcryptjs) |
-| Scheduling | node-cron |
-| Excel Import | xlsx (SheetJS) |
-| Deployment | Windows Server |
+| Layer | Technology | Version |
+|-------|------------|---------|
+| Backend | Node.js + Express | ES Modules |
+| Frontend | Vue 3 + Element Plus + Vite | Vue 3.4+ |
+| Database | MySQL + Sequelize ORM | MySQL 8.0+ |
+| Authentication | JWT (jsonwebtoken + bcryptjs) | - |
+| Scheduling | node-cron | - |
+| Excel Import | xlsx (SheetJS) | - |
+| Deployment | Windows Server / Linux | - |
+
+### Frontend Dependencies
+- **vue**: 3.4.0+ - 核心框架
+- **vue-router**: 4.2.5+ - 路由管理
+- **pinia**: 3.0.4+ - 状态管理
+- **element-plus**: 2.14.1+ - UI 组件库
+- **axios**: 1.6.0+ - HTTP 客户端
+- **@element-plus/icons-vue**: 2.3.2+ - 图标库
 
 ## Architecture
 
@@ -31,7 +39,42 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 - **server/** - 后端Express API服务，包含models、routes、middlewares、services
 - **admin-web/** - Vue 3前端管理后台
 - **generated-cards/** - 动态生成的贺卡HTML文件存储目录
+- **uploads/** - Excel上传临时目录
 - 贺卡展示页面为纯HTML/CSS/JS实现，不依赖Vue框架
+
+```
+birthday-card-system/
+├── server/                      # 后端服务
+│   ├── src/
+│   │   ├── app.js              # 应用入口 + 启动逻辑
+│   │   ├── config/             # 配置 (数据库、应用)
+│   │   ├── models/             # 数据模型 (Sequelize ORM)
+│   │   ├── routes/             # API路由 (auth, employees, templates, records, card)
+│   │   ├── middlewares/        # 中间件 (认证、错误处理)
+│   │   ├── services/           # 业务服务 (调度器, 贺卡生成, 模板匹配)
+│   │   ├── utils/              # 工具函数 (JWT, 密码, 响应格式, Excel解析)
+│   │   └── data/               # 静态数据 (默认模板HTML)
+│   ├── generated-cards/        # 生成的贺卡HTML文件
+│   ├── uploads/                # Excel上传临时目录
+│   └── .env                    # 环境变量配置
+├── admin-web/                  # 前端管理后台
+│   ├── src/
+│   │   ├── api/               # API接口封装
+│   │   ├── views/             # 视图组件
+│   │   ├── components/        # 公共组件
+│   │   ├── stores/            # Pinia状态管理
+│   │   ├── router/            # 路由配置
+│   │   ├── types/             # TypeScript类型定义
+│   │   ├── main.ts            # 入口文件
+│   │   └── style.css          # 全局样式
+│   ├── public/                # 静态资源
+│   ├── vite.config.ts         # Vite配置
+│   └── package.json
+├── docs/                       # 文档目录
+│   └── analysis-report.md     # 分析报告
+├── birthday_h5_rebuild.html   # 贺卡模板参考文件
+└── AGENTS.md                  # AI助手指南
+```
 
 ## Development Commands (To Be Implemented)
 
@@ -67,6 +110,16 @@ npm run lint         # ESLint检查（待配置）
 - axios配置请求拦截器添加JWT认证头
 - 路由守卫控制页面访问权限
 - Element Plus Form组件处理表单验证
+- TypeScript类型定义保证类型安全
+- 响应式布局适配移动端设备
+
+### Frontend Key Files
+- **api/** - API接口封装层，统一管理所有后端接口
+- **views/** - 页面组件（登录、仪表盘、员工管理、模板管理等）
+- **components/** - 公共组件
+- **stores/** - Pinia状态管理（用户信息、Token等）
+- **router/** - Vue Router路由配置
+- **main.ts** - 应用入口，初始化Vue实例
 
 ### Birthday Card Template
 - 贺卡模板使用纯HTML/CSS/JS，无Vue依赖

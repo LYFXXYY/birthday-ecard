@@ -1,7 +1,7 @@
 import express from 'express';
 import { Op } from 'sequelize';
 import { success, error } from '../utils/response.js';
-import { SendRecord, Employee } from '../models/index.js';
+import { SendRecord, Employee, Template } from '../models/index.js';
 import { authMiddleware } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -31,7 +31,11 @@ router.get('/', async (req, res) => {
       include: [{
         model: Employee,
         as: 'employee',
-        attributes: ['name', 'department']
+        attributes: ['name', 'department', 'phone']
+      }, {
+        model: Template,
+        as: 'template',
+        attributes: ['name']
       }],
       order: [['created_at', 'DESC']],
       offset,
@@ -60,7 +64,7 @@ router.get('/stats', async (req, res) => {
       total,
       success: successCount,
       failed: failedCount,
-      successRate: total ? ((successCount / total) * 100).toFixed(2) : 0
+      success_rate: total ? parseFloat(((successCount / total) * 100).toFixed(2)) : 0
     });
   } catch (err) {
     error(res, err.message);

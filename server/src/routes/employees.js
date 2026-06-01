@@ -19,10 +19,10 @@ const upload = multer({
   dest: '../uploads/',
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (['.xlsx', '.xls'].includes(ext)) {
+    if (['.xlsx', '.xls', '.csv'].includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('只支持Excel文件'));
+      cb(new Error('只支持Excel和CSV文件'));
     }
   }
 });
@@ -30,14 +30,15 @@ const upload = multer({
 /**
  * 白名单过滤：防止mass assignment攻击
  */
-const EMPLOYEE_FIELDS = ['name', 'gender', 'birthday', 'phone', 'department', 'position', 'defaultTemplateId'];
+const EMPLOYEE_FIELDS = ['name', 'gender', 'birthday', 'phone', 'department', 'position', 'defaultTemplateId', 'default_template_id'];
 
 const sanitizeEmployeeInput = (obj) => {
   const sanitized = {};
   for (const key of EMPLOYEE_FIELDS) {
     if (obj.hasOwnProperty(key)) {
-      // 将 camelCase 转换为 snake_case 数据库字段名
-      const dbKey = key === 'defaultTemplateId' ? 'default_template_id' : key;
+      // 统一转换为 snake_case 数据库字段名
+      let dbKey = key;
+      if (key === 'defaultTemplateId') dbKey = 'default_template_id';
       sanitized[dbKey] = obj[key];
     }
   }
@@ -92,6 +93,34 @@ router.get('/', async (req, res) => {
       page: parseInt(page),
       pageSize: parseInt(pageSize)
     });
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// GET /api/employees/today-birthday - 获取今天生日的员工（必须在 /:id 之前定义）
+router.get('/today-birthday', async (req, res) => {
+  try {
+    const today = new Date();
+    const month = today.getMonth() + 1;
+    const day = today.getDate();
+
+    const employees = await Employee.findAll({
+      where: {
+        is_active: true,
+        [Op.and]: [
+          sequelize.where(sequelize.fn('MONTH', sequelize.col('birthday')), month),
+          sequelize.where(sequelize.fn('DAY', sequelize.col('birthday')), day)
+        ]
+      },
+      include: [{
+        model: Template,
+        as: 'default_template',
+        attributes: ['id', 'name']
+      }]
+    });
+
+    success(res, employees);
   } catch (err) {
     error(res, err.message);
   }
@@ -158,34 +187,6 @@ router.delete('/:id', async (req, res) => {
     }
 
     success(res, null, '删除成功');
-  } catch (err) {
-    error(res, err.message);
-  }
-});
-
-// GET /api/employees/today-birthday - 获取今天生日的员工
-router.get('/today-birthday', async (req, res) => {
-  try {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
-
-    const employees = await Employee.findAll({
-      where: {
-        is_active: true,
-        [Op.and]: [
-          sequelize.where(sequelize.fn('MONTH', sequelize.col('birthday')), month),
-          sequelize.where(sequelize.fn('DAY', sequelize.col('birthday')), day)
-        ]
-      },
-      include: [{
-        model: Template,
-        as: 'default_template',
-        attributes: ['id', 'name']
-      }]
-    });
-
-    success(res, employees);
   } catch (err) {
     error(res, err.message);
   }

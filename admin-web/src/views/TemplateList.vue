@@ -1,0 +1,308 @@
+<template>
+  <div class="template-list-container">
+    <el-card>
+      <!-- 页面头部 -->
+      <template #header>
+        <div class="card-header">
+          <span class="title">贺卡模板管理</span>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            添加模板
+          </el-button>
+        </div>
+      </template>
+
+      <!-- 模板卡片网格 -->
+      <div v-loading="loading" class="template-grid">
+        <el-empty v-if="templates.length === 0 && !loading" description="暂无模板" />
+        
+        <div v-else class="cards-container">
+          <el-card
+            v-for="template in templates"
+            :key="template.id"
+            class="template-card"
+            shadow="hover"
+          >
+            <!-- 模板预览图 -->
+            <div class="template-preview">
+              <div class="preview-placeholder">
+                <el-icon :size="48"><Picture /></el-icon>
+                <div class="preview-text">模板预览</div>
+              </div>
+              <el-tag
+                :type="template.is_active === 1 ? 'success' : 'info'"
+                class="status-tag"
+              >
+                {{ template.is_active === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </div>
+
+            <!-- 模板信息 -->
+            <div class="template-info">
+              <h3 class="template-name">{{ template.name }}</h3>
+              <p class="template-desc">{{ template.description || '暂无描述' }}</p>
+              
+              <div class="template-meta">
+                <el-tag size="small" type="info">
+                  {{ getGenderText(template.match_gender) }}
+                </el-tag>
+                <el-tag v-if="template.match_age_min || template.match_age_max" size="small">
+                  {{ template.match_age_min || '-' }}-{{ template.match_age_max || '-' }}岁
+                </el-tag>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="template-actions">
+              <el-button type="primary" @click="handlePreview(template)">
+                <el-icon><View /></el-icon>
+                预览
+              </el-button>
+              <el-button type="warning" @click="handleEdit(template)">
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button type="danger" @click="handleDelete(template)">
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </div>
+          </el-card>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 预览对话框 -->
+    <el-dialog
+      v-model="previewVisible"
+      title="模板预览"
+      width="800px"
+      :close-on-click-modal="false"
+    >
+      <div class="preview-container" v-html="previewContent"></div>
+      <template #footer>
+        <el-button @click="previewVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { Plus, Picture, View, Edit, Delete } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getTemplateList, deleteTemplate, previewTemplate } from '@/api/templates'
+import type { Template } from '@/api/templates'
+
+const router = useRouter()
+
+// 模板列表
+const templates = ref<Template[]>([])
+const loading = ref(false)
+
+// 预览对话框
+const previewVisible = ref(false)
+const previewContent = ref('')
+
+// 获取性别文字
+const getGenderText = (gender?: string) => {
+  const genderMap: Record<string, string> = {
+    male: '男性',
+    female: '女性',
+    all: '不限'
+  }
+  return genderMap[gender || 'all'] || '不限'
+}
+
+// 加载模板列表
+const loadTemplates = async () => {
+  loading.value = true
+  try {
+    templates.value = await getTemplateList()
+  } catch (error) {
+    console.error('加载模板列表失败：', error)
+    // 接口异常时使用默认兜底数据
+    templates.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+// 添加模板
+const handleAdd = () => {
+  router.push('/templates/add')
+}
+
+// 编辑模板
+const handleEdit = (template: Template) => {
+  router.push(`/templates/${template.id}/edit`)
+}
+
+// 预览模板
+const handlePreview = async (template: Template) => {
+  previewVisible.value = true
+  if (!template.id) {
+    previewContent.value = template.html_content || '<p>暂无内容</p>'
+    return
+  }
+
+  try {
+    previewContent.value = await previewTemplate(template.id)
+  } catch (error) {
+    console.error('预览模板失败，使用本地内容回退：', error)
+    previewContent.value = template.html_content || '<p>暂无内容</p>'
+  }
+}
+
+// 删除模板
+const handleDelete = async (template: Template) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除模板"${template.name}"吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await deleteTemplate(template.id!)
+    ElMessage.success('删除成功')
+    await loadTemplates()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除失败：', error)
+    }
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadTemplates()
+})
+</script>
+
+<style scoped>
+.template-list-container {
+  padding: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.template-grid {
+  min-height: 400px;
+}
+
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.template-card {
+  transition: all 0.3s;
+}
+
+.template-card:hover {
+  transform: translateY(-4px);
+}
+
+.template-preview {
+  position: relative;
+  height: 200px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-placeholder {
+  text-align: center;
+  color: white;
+}
+
+.preview-text {
+  margin-top: 8px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.status-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.template-info {
+  margin-bottom: 16px;
+}
+
+.template-name {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.template-desc {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.template-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.template-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+}
+
+.template-actions .el-button {
+  flex: 1;
+}
+
+.preview-container {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .cards-container {
+    grid-template-columns: 1fr;
+  }
+
+  .template-actions {
+    flex-direction: column;
+  }
+
+  .template-actions .el-button {
+    width: 100%;
+  }
+}
+</style>

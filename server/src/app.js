@@ -41,9 +41,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 健康检查
+// 健康检查（无需认证）
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ code: 200, message: 'OK', data: { status: 'healthy', timestamp: new Date() } });
 });
 
 // API路由
