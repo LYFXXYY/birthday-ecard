@@ -1,24 +1,164 @@
-// 短信发送服务（预留接口）
+// 短信/彩信发送服务
+// 支持两种模式：mock（模拟发送，开发环境默认）和 carrier（对接运营商API）
+// 切换到真实运营商只需修改 .env 中的 SMS_PROVIDER 和相关认证参数
+
+import axios from 'axios';
+import { config } from '../config/index.js';
+
 /**
- * 发送短信/彩信
+ * 发送短信/彩信（主入口函数）
+ * 
+ * 根据 SMS_PROVIDER 配置自动选择发送模式，内置重试机制。
+ * 该函数永远不会抛出异常，所有错误都通过返回值中的 success/error 字段体现。
+ * 
  * @param {string} phone - 接收方手机号
- * @param {string} message - 短信内容
- * @returns {Promise<{success: boolean, messageId: string}>}
+ * @param {string} cardUrl - 贺卡访问链接
+ * @param {string} employeeName - 员工姓名（用于日志和短信内容）
+ * @returns {Promise<{
+ *   success: boolean,      // 是否发送成功
+ *   messageId: string|null,// 运营商返回的消息ID（mock模式为模拟ID）
+ *   provider: string,      // 使用的发送模式：'mock' 或 'carrier'
+ *   retryCount: number,    // 实际重试次数
+ *   error: string|null,    // 失败时的错误信息
+ *   sentAt: Date           // 发送时间
+ * }>}
  */
-export const sendSMS = async (phone, message) => {
-  // TODO: 对接移动公司提供的具体接口
-  // 预计实现：
-  // const response = await axios.post(MOBILE_API_URL, {
-  //   phone: phone,
-  //   content: content,
-  //   type: 'mms'  // 或 'sms'
-  // });
-  // return response.data;
+export const sendSMS = async (phone, cardUrl, employeeName) => {
+  const provider = config.sms.provider;
+  const sentAt = new Date();
+
+  try {
+    if (provider === 'carrier') {
+      return await _sendWithRetry(() => _carrierSend(phone, cardUrl, employeeName));
+    } else {
+      return await _mockSend(phone, cardUrl, employeeName);
+    }
+  } catch (error) {
+    return {
+      success: false,
+      messageId: null,
+      provider,
+      retryCount: 0,
+      error: `未预期的错误: ${error.message}`,
+      sentAt
+    };
+  }
+};
+
+/**
+ * 模拟短信发送 - 仅在控制台输出日志，不实际发送短信
+ * 开发阶段使用此模式验证流程是否正常
+ */
+const _mockSend = async (phone, cardUrl, employeeName) => {
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  const messageId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   
-  // 开发阶段模拟发送
-  console.log(`[短信发送模拟] 手机: ${phone}, 内容: ${message}`);
+  console.log(`[短信模拟] 收件人: ${phone}`);
+  console.log(`[短信模拟] 员工: ${employeeName}`);
+  console.log(`[短信模拟] 贺卡链接: ${cardUrl}`);
+  console.log(`[短信模拟] 消息ID: ${messageId}`);
+
   return {
     success: true,
-    messageId: `msg_${Date.now()}`
+    messageId,
+    provider: 'mock',
+    retryCount: 0,
+    error: null,
+    sentAt: new Date()
+  };
+};
+
+/**
+ * 通过运营商API发送短信/彩信
+ * 
+ * 注意：当前为骨架实现，拿到运营商API文档后需要补充：
+ * 1. 具体的请求URL路径
+ * 2. 请求头格式（认证方式：Bearer Token / API Key / 签名等）
+ * 3. 请求体格式（手机号、内容的字段名）
+ * 4. 响应解析逻辑（成功/失败的判断条件和消息ID提取）
+ */
+const _carrierSend = async (phone, cardUrl, employeeName) => {
+  const { apiUrl, apiKey, senderId, timeout } = config.sms;
+
+  if (!apiUrl) {
+    throw new Error('SMS_API_URL 未配置，无法调用运营商接口');
+  }
+
+  const messageContent = `亲爱的${employeeName}，祝您生日快乐！点击查看您的专属贺卡：${cardUrl}`;
+
+  // TODO: 根据运营商文档调整请求格式
+  const response = await axios.post(apiUrl, {
+    phone_number: phone,
+    content: messageContent,
+    sender_id: senderId,
+    type: 'sms'
+  }, {
+    headers: {
+      'Content-Type': 'application/json',
+      // TODO: 根据运营商文档调整认证方式
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    timeout,
+  });
+
+  // TODO: 根据运营商文档调整响应解析逻辑
+  const data = response.data;
+  const isSuccess = data.code === 0 || data.code === '0' || data.status === 'success';
+  
+  if (!isSuccess) {
+    throw new Error(`运营商返回错误: ${data.message || JSON.stringify(data)}`);
+  }
+
+  const messageId = data.message_id || data.msgId || data.id || null;
+
+  return {
+    success: true,
+    messageId: String(messageId),
+    provider: 'carrier',
+    retryCount: 0,
+    error: null,
+    sentAt: new Date(),
+    rawResponse: data
+  };
+};
+
+/**
+ * 带指数退避的重试包装器
+ * 
+ * 当运营商API调用失败时自动重试，采用指数退避策略：
+ * 第1次重试等待 retryDelay * 1ms
+ * 第2次重试等待 retryDelay * 2ms
+ * 第3次重试等待 retryDelay * 4ms
+ */
+const _sendWithRetry = async (sendFn) => {
+  const { maxRetries, retryDelay } = config.sms;
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await sendFn();
+      result.retryCount = attempt;
+      return result;
+    } catch (error) {
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        const delay = retryDelay * Math.pow(2, attempt);
+        console.warn(`[短信重试] 第 ${attempt + 1}/${maxRetries} 次重试，等待 ${delay}ms，原因: ${error.message}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  console.error(`[短信发送失败] 已重试 ${maxRetries} 次仍然失败: ${lastError.message}`);
+  
+  return {
+    success: false,
+    messageId: null,
+    provider: 'carrier',
+    retryCount: maxRetries,
+    error: lastError.message,
+    sentAt: new Date()
   };
 };

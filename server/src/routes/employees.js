@@ -8,6 +8,7 @@ import { authMiddleware } from '../middlewares/auth.js';
 import { parseEmployeeExcel, validateEmployee } from '../utils/excelParser.js';
 import { Op } from 'sequelize';
 import { generateCard } from '../services/cardGenerator.js';
+import { sendSMS } from '../services/smsService.js';
 
 const router = Router();
 
@@ -192,7 +193,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/employees/:id/generate-card - 手动生成员工贺卡
+// POST /api/employees/:id/generate-card - 手动生成员工贺卡并发送短信
 router.post('/:id/generate-card', async (req, res) => {
   try {
     const employee = await Employee.findByPk(req.params.id, {
@@ -203,26 +204,45 @@ router.post('/:id/generate-card', async (req, res) => {
       return error(res, '员工不存在', 404);
     }
 
-    // 获取模板
+    // 获取模板（优先使用员工指定的模板，否则用通用模板）
     const template = employee.default_template || await Template.findOne({ where: { match_gender: 'all' } });
     if (!template) {
       return error(res, '没有可用的模板', 400);
     }
 
-    const result = await generateCard(template, employee);
+    const cardResult = await generateCard(template, employee);
     
-    // 保存发送记录
-    await SendRecord.create({
+    // 创建待发送记录（先建记录再发短信，保证崩溃时也有据可查）
+    const record = await SendRecord.create({
       employee_id: employee.id,
       template_id: template.id,
-      card_url: result.cardUrl,
-      card_id: result.cardId,
-      send_status: 'success',
+      card_url: cardResult.cardUrl,
+      card_id: cardResult.cardId,
+      send_status: 'pending',
       send_time: new Date(),
       admin_id: req.user.id
     });
 
-    success(res, result, '贺卡生成成功');
+    // 发送短信
+    const smsResult = await sendSMS(employee.phone, cardResult.cardUrl, employee.name);
+
+    // 根据短信结果更新记录
+    await record.update({
+      send_status: smsResult.success ? 'success' : 'failed',
+      message_id: smsResult.messageId,
+      sms_provider: smsResult.provider,
+      retry_count: smsResult.retryCount,
+      error_message: smsResult.error || null,
+      send_time: new Date()
+    });
+
+    success(res, {
+      cardUrl: cardResult.cardUrl,
+      cardId: cardResult.cardId,
+      smsStatus: smsResult.success ? 'success' : 'failed',
+      smsProvider: smsResult.provider,
+      smsError: smsResult.error || null
+    }, smsResult.success ? '贺卡生成并发送成功' : '贺卡生成成功，短信发送失败');
   } catch (err) {
     error(res, err.message);
   }

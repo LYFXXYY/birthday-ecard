@@ -1,0 +1,443 @@
+:root {
+    /* 男性主题色 */
+    --male-primary: #4A90E2;
+    --male-secondary: #7BB3E8;
+    --male-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    /* 女性主题色 */
+    --female-primary: #FF6B9D;
+    --female-secondary: #FFB8D4;
+    --female-bg: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    
+    /* 默认主题（未知性别） */
+    --default-primary: #667eea;
+    --default-secondary: #764ba2;
+    --default-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif;
+    background: var(--default-bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 根据性别设置主题色 */
+body[data-gender="male"] {
+    background: var(--male-bg);
+}
+
+body[data-gender="female"] {
+    background: var(--female-bg);
+}
+
+.page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.page.hidden {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.page-blessing.hidden {
+    transform: translateX(-100%);
+}
+
+.card-container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 40px 30px;
+    position: relative;
+    animation: slideIn 0.8s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.card-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.birthday-badge {
+    font-size: 3rem;
+    animation: bounce 2s infinite;
+    display: inline-block;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-15px) rotate(10deg);
+    }
+}
+
+.card-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 15px 0;
+    animation: fadeInDown 1s ease-in;
+}
+
+body[data-gender="male"] .card-title {
+    color: var(--male-primary);
+}
+
+body[data-gender="female"] .card-title {
+    color: var(--female-primary);
+}
+
+.employee-name {
+    font-size: 1.5rem;
+    color: #333;
+    margin-top: 10px;
+    font-weight: 600;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-content {
+    text-align: center;
+}
+
+.avatar-wrapper {
+    margin: 20px auto;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 5px solid var(--default-primary);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s infinite;
+}
+
+body[data-gender="male"] .avatar-wrapper {
+    border-color: var(--male-primary);
+}
+
+body[data-gender="female"] .avatar-wrapper {
+    border-color: var(--female-primary);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 5px 30px rgba(0, 0, 0, 0.4);
+    }
+}
+
+.avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.info-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.department {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.position {
+    font-size: 0.95rem;
+    color: #999;
+}
+
+.blessing-box {
+    margin: 30px 0;
+    padding: 25px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 15px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.blessing-box::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    font-size: 4rem;
+    color: rgba(0, 0, 0, 0.1);
+    font-family: Georgia, serif;
+}
+
+.blessing-text {
+    font-size: 1.2rem;
+    color: #333;
+    line-height: 1.8;
+    font-weight: 500;
+    animation: fadeIn 1.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.cake-image {
+    margin: 20px auto;
+    max-width: 180px;
+}
+
+.cake-image img {
+    width: 100%;
+    height: auto;
+    animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.card-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px dashed #ddd;
+}
+
+.date {
+    font-size: 0.9rem;
+    color: #999;
+    margin-bottom: 15px;
+}
+
+.next-page-btn,
+.prev-page-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.next-page-btn:hover,
+.prev-page-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+body[data-gender="male"] .next-page-btn,
+body[data-gender="male"] .prev-page-btn {
+    background: var(--male-primary);
+}
+
+body[data-gender="female"] .next-page-btn,
+body[data-gender="female"] .prev-page-btn {
+    background: var(--female-primary);
+}
+
+/* 第二页感谢页样式 */
+.thanks-icon {
+    font-size: 4rem;
+    animation: heartbeat 1.5s infinite;
+    display: inline-block;
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+.thanks-message {
+    margin: 30px 0;
+    padding: 30px;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.thanks-text {
+    font-size: 1.1rem;
+    color: #2d3436;
+    line-height: 2;
+}
+
+.wish-highlight {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+    color: var(--default-primary);
+    font-size: 1.2rem;
+}
+
+body[data-gender="male"] .wish-highlight {
+    color: var(--male-primary);
+}
+
+body[data-gender="female"] .wish-highlight {
+    color: var(--female-primary);
+}
+
+.signature {
+    margin-top: 40px;
+    text-align: right;
+    padding-right: 20px;
+}
+
+.signature p {
+    font-size: 1rem;
+    color: #666;
+    margin: 5px 0;
+}
+
+.signature .year {
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.music-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 1000;
+}
+
+.music-btn:hover {
+    transform: scale(1.1);
+}
+
+.music-btn.playing {
+    animation: pulse 1s infinite;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .page {
+        padding: 10px;
+    }
+    
+    .card-container {
+        padding: 25px 20px;
+        max-height: 85vh;
+    }
+    
+    .card-title {
+        font-size: 2rem;
+    }
+    
+    .employee-name {
+        font-size: 1.3rem;
+    }
+    
+    .avatar-wrapper {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .blessing-text,
+    .thanks-text {
+        font-size: 1rem;
+    }
+    
+    .blessing-box,
+    .thanks-message {
+        padding: 20px;
+    }
+    
+    .music-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-title {
+        font-size: 1.8rem;
+    }
+    
+    .birthday-badge,
+    .thanks-icon {
+        font-size: 2.5rem;
+    }
+    
+    .next-page-btn,
+    .prev-page-btn {
+        padding: 10px 25px;
+        font-size: 0.9rem;
+    }
+}

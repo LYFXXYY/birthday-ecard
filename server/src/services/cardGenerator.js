@@ -5,6 +5,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/index.js';
 
 /**
+ * 格式化生日为中文日期字符串
+ * 将 "1990-06-15" 格式的日期转为 "6月15日"
+ * @param {string} dateStr - DATEONLY 格式日期字符串 (YYYY-MM-DD)
+ * @returns {string} 中文格式的月日
+ */
+const formatBirthday = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  } catch {
+    return dateStr; // 解析失败时返回原始字符串
+  }
+};
+
+/**
  * 根据模板和员工信息生成个性化贺卡
  */
 export const generateCard = async (template, employee) => {
@@ -25,6 +41,8 @@ export const generateCard = async (template, employee) => {
     const replacements = {
       '{{name}}': employee.name,
       '{{department}}': employee.department || '',
+      '{{position}}': employee.position || '',
+      '{{birthday}}': formatBirthday(employee.birthday),
       '{{blessing}}': blessing,
       '{{year}}': new Date().getFullYear().toString()
     };
