@@ -19,6 +19,7 @@ import cardRoutes from './routes/card.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
+import migrateDatabase from './utils/migrate.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -67,6 +68,9 @@ const startServer = async () => {
     // 不使用alter或force,只同步不存在的表
     await sequelize.sync();
     console.log('[数据库] 连接成功');
+
+    // 迁移：确保已存在的表拥有新增列
+    await migrateDatabase();
 
     await initDefaultAdmin();
     await initDefaultTemplate();

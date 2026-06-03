@@ -38,12 +38,7 @@
           />
         </el-form-item>
         
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.is_active" placeholder="全部" clearable @clear="handleSearch">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
+        <!-- 状态筛选已移除 -->
         <el-form-item label="生日筛选">
           <el-select v-model="searchForm.birthday_filter" placeholder="全部" @change="handleSearch">
             <el-option label="全部" value="all" />
@@ -81,13 +76,7 @@
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="department" label="部门" min-width="150" />
         <el-table-column prop="position" label="职位" min-width="150" />
-        <el-table-column label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.is_active === 1 ? 'success' : 'info'">
-              {{ row.is_active === 1 ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+        <!-- 状态列已移除 -->
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button type="success" size="small" @click="handleSend(row)">
@@ -133,7 +122,6 @@ const router = useRouter()
 const searchForm = reactive({
   keyword: '',
   department: '',
-  is_active: undefined as number | undefined,
   birthday_filter: 'all' as 'all' | 'today'
 })
 
@@ -162,7 +150,6 @@ const loadData = async () => {
     const params: EmployeeQueryParams = {
       keyword: searchForm.keyword,
       department: searchForm.department,
-      is_active: searchForm.is_active,
       page: pagination.page,
       pageSize: pagination.pageSize
     }
@@ -189,7 +176,6 @@ const handleSearch = () => {
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.department = ''
-  searchForm.is_active = undefined
   searchForm.birthday_filter = 'all'
   handleSearch()
 }

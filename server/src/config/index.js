@@ -7,11 +7,16 @@ if (!process.env.DB_HOST) {
 
 const jwtSecret = process.env.JWT_SECRET || 'default_secret_change_in_production';
 const nodeEnv = process.env.NODE_ENV || 'development';
+const smsProvider = process.env.SMS_PROVIDER || 'mock';
 
 // 生产环境安全警告
 if (nodeEnv === 'production' && jwtSecret === 'default_secret_change_in_production') {
   console.error('[安全警告] JWT_SECRET 使用默认值！生产环境必须设置强密钥！');
   console.error('[安全警告] 请在 .env 文件中设置 JWT_SECRET 为一个至少32字符的随机字符串');
+}
+
+if (smsProvider === 'carrier' && !process.env.SMS_API_KEY) {
+  console.warn('[短信警告] SMS_PROVIDER=carrier 但 SMS_API_KEY 未配置，发送将失败！');
 }
 
 export const config = {
@@ -23,5 +28,18 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
   cardsDir: process.env.CARDS_DIR || './generated-cards',
-  uploadsDir: process.env.UPLOADS_DIR || './uploads'
+  uploadsDir: process.env.UPLOADS_DIR || './uploads',
+  // 贺卡发送者名称（用于模板 {{sender}} 占位符）
+  senderName: process.env.SENDER_NAME || '公司工会',
+  // 短信发送配置
+  sms: {
+    provider: smsProvider,
+    apiUrl: process.env.SMS_API_URL || '',
+    apiKey: process.env.SMS_API_KEY || '',
+    apiSecret: process.env.SMS_API_SECRET || '',
+    senderId: process.env.SMS_SENDER_ID || '',
+    maxRetries: parseInt(process.env.SMS_MAX_RETRIES) || 3,
+    retryDelay: parseInt(process.env.SMS_RETRY_DELAY) || 1000,
+    timeout: parseInt(process.env.SMS_TIMEOUT) || 10000
+  }
 };

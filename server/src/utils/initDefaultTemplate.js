@@ -8,26 +8,66 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
-// 模板清单：文件名 → 数据库字段
+// 模板清单：文件名 → 数据库字段（含年龄段匹配规则）
 const TEMPLATE_MANIFEST = [
   {
-    file: 'template-default.html',
-    name: '默认粉色模板',
-    description: '粉色温馨风格，适合女性员工',
+    file: 'template-youth-female.html',
+    name: '青年女性模板',
+    description: '珊瑚粉橘风格，适合18-30岁女性员工',
     match_gender: 'female',
+    match_age_min: 18,
+    match_age_max: 30,
     is_active: true
   },
   {
-    file: 'template-male.html',
-    name: '蓝色男性模板',
-    description: '蓝色沉稳风格，适合男性员工',
+    file: 'template-youth-male.html',
+    name: '青年男性模板',
+    description: '青蓝科技风格，适合18-30岁男性员工',
     match_gender: 'male',
+    match_age_min: 18,
+    match_age_max: 30,
+    is_active: true
+  },
+  {
+    file: 'template-young-female.html',
+    name: '壮年女性模板',
+    description: '粉红浪漫风格，适合30-45岁女性员工',
+    match_gender: 'female',
+    match_age_min: 31,
+    match_age_max: 45,
+    is_active: true
+  },
+  {
+    file: 'template-young-male.html',
+    name: '壮年男性模板',
+    description: '天蓝清新风格，适合30-45岁男性员工',
+    match_gender: 'male',
+    match_age_min: 31,
+    match_age_max: 45,
+    is_active: true
+  },
+  {
+    file: 'template-middle-female.html',
+    name: '中年女性模板',
+    description: '紫色优雅风格，适合45-65岁女性员工',
+    match_gender: 'female',
+    match_age_min: 46,
+    match_age_max: 65,
+    is_active: true
+  },
+  {
+    file: 'template-middle-male.html',
+    name: '中年男性模板',
+    description: '深蓝沉稳风格，适合45-65岁男性员工',
+    match_gender: 'male',
+    match_age_min: 46,
+    match_age_max: 65,
     is_active: true
   },
   {
     file: 'template-universal.html',
     name: '金色通用模板',
-    description: '金色喜庆风格，适合所有员工',
+    description: '金色喜庆风格，适合所有员工（兜底模板）',
     match_gender: 'all',
     is_active: true
   }
@@ -58,6 +98,8 @@ const initDefaultTemplate = async () => {
           name: entry.name,
           description: entry.description,
           match_gender: entry.match_gender,
+          match_age_min: entry.match_age_min || null,
+          match_age_max: entry.match_age_max || null,
           html_content: htmlContent,
           is_active: entry.is_active
         });

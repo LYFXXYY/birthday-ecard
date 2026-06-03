@@ -69,16 +69,6 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="状态" prop="is_active">
-          <el-switch
-            v-model="formData.is_active"
-            :active-value="1"
-            :inactive-value="0"
-            active-text="启用"
-            inactive-text="禁用"
-          />
-        </el-form-item>
-
         <el-form-item>
           <el-button type="primary" @click="handleSubmit" :loading="submitting">
             {{ isEdit ? '保存修改' : '提交' }}
@@ -117,8 +107,7 @@ const formData = reactive<Partial<Employee>>({
   phone: '',
   department: '',
   position: '',
-  default_template_id: null,
-  is_active: 1
+  default_template_id: null
 })
 
 // 表单验证规则
@@ -149,7 +138,7 @@ const templates = ref<Template[]>([])
 // 加载模板列表
 const loadTemplates = async () => {
   try {
-    templates.value = await getTemplateList({ is_active: 1 })
+    templates.value = await getTemplateList()
   } catch (error) {
     console.error('加载模板列表失败：', error)
   }
@@ -171,8 +160,7 @@ const loadEmployeeDetail = async () => {
       phone: detail.phone,
       department: detail.department || '',
       position: detail.position || '',
-      default_template_id: detail.default_template_id,
-      is_active: detail.is_active
+      default_template_id: detail.default_template_id
     })
   } catch (error) {
     console.error('加载员工详情失败：', error)

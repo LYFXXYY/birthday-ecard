@@ -5,10 +5,7 @@
       <template #header>
         <div class="card-header">
           <span class="title">贺卡模板管理</span>
-          <el-button type="primary" @click="handleAdd">
-            <el-icon><Plus /></el-icon>
-            添加模板
-          </el-button>
+          <!-- 添加模板功能已移除 -->
         </div>
       </template>
 
@@ -29,12 +26,6 @@
                 <el-icon :size="48"><Picture /></el-icon>
                 <div class="preview-text">模板预览</div>
               </div>
-              <el-tag
-                :type="template.is_active === 1 ? 'success' : 'info'"
-                class="status-tag"
-              >
-                {{ template.is_active === 1 ? '启用' : '禁用' }}
-              </el-tag>
             </div>
 
             <!-- 模板信息 -->
@@ -52,19 +43,15 @@
               </div>
             </div>
 
-            <!-- 操作按钮 -->
+            <!-- 操作按钮：预览与编辑（新增/删除已移除） -->
             <div class="template-actions">
-              <el-button type="primary" @click="handlePreview(template)">
+              <el-button type="info" @click="handlePreview(template)">
                 <el-icon><View /></el-icon>
                 预览
               </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
                 编辑
-              </el-button>
-              <el-button type="danger" @click="handleDelete(template)">
-                <el-icon><Delete /></el-icon>
-                删除
               </el-button>
             </div>
           </el-card>
@@ -90,9 +77,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Picture, View, Edit, Delete } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTemplateList, deleteTemplate, previewTemplate } from '@/api/templates'
+import { Picture, View, Edit } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { getTemplateList, previewTemplate } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
@@ -129,11 +116,6 @@ const loadTemplates = async () => {
   }
 }
 
-// 添加模板
-const handleAdd = () => {
-  router.push('/templates/add')
-}
-
 // 编辑模板
 const handleEdit = (template: Template) => {
   router.push(`/templates/${template.id}/edit`)
@@ -155,24 +137,7 @@ const handlePreview = async (template: Template) => {
   }
 }
 
-// 删除模板
-const handleDelete = async (template: Template) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除模板"${template.name}"吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    await deleteTemplate(template.id!)
-    ElMessage.success('删除成功')
-    await loadTemplates()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('删除失败：', error)
-    }
-  }
-}
+// 删除功能已移除，列表仅支持编辑与预览
 
 // 页面加载时获取数据
 onMounted(() => {
@@ -236,12 +201,6 @@ onMounted(() => {
   margin-top: 8px;
   font-size: 14px;
   opacity: 0.9;
-}
-
-.status-tag {
-  position: absolute;
-  top: 12px;
-  right: 12px;
 }
 
 .template-info {

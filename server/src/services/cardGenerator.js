@@ -43,6 +43,7 @@ export const generateCard = async (template, employee) => {
       '{{department}}': employee.department || '',
       '{{position}}': employee.position || '',
       '{{birthday}}': formatBirthday(employee.birthday),
+      '{{sender}}': config.senderName || '公司工会',
       '{{blessing}}': blessing,
       '{{year}}': new Date().getFullYear().toString()
     };

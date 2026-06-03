@@ -117,6 +117,9 @@ router.get('/:id/preview', async (req, res) => {
     const replacements = {
       '{{name}}': '张三',
       '{{department}}': '技术部',
+      '{{position}}': '工程师',
+      '{{birthday}}': '6月15日',
+      '{{sender}}': '公司工会',
       '{{blessing}}': '祝你生日快乐，万事如意！',
       '{{year}}': new Date().getFullYear().toString()
     };

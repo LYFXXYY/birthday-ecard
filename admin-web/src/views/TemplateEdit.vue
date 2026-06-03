@@ -82,30 +82,13 @@
 
             <el-divider content-position="left">模板内容</el-divider>
 
-            <el-form-item label="HTML内容" prop="html_content">
+            <!-- 使用纯文本编辑贺卡内容（管理员可通过占位符 {{name}} 等进行替换） -->
+            <el-form-item label="贺卡文本内容" prop="text_content">
               <el-input
-                v-model="formData.html_content"
+                v-model="formData.text_content"
                 type="textarea"
-                :rows="20"
-                placeholder="请输入贺卡HTML模板内容，使用 {{name}}、{{department}} 等占位符"
-                class="html-editor"
-              />
-              <div class="editor-tips">
-                <p>💡 可用占位符：</p>
-                <el-tag size="small" style="margin: 4px" v-text="'{{name}}'"></el-tag>
-                <el-tag size="small" style="margin: 4px" v-text="'{{department}}'"></el-tag>
-                <el-tag size="small" style="margin: 4px" v-text="'{{position}}'"></el-tag>
-                <el-tag size="small" style="margin: 4px" v-text="'{{blessing}}'"></el-tag>
-              </div>
-            </el-form-item>
-
-            <el-form-item label="状态" prop="is_active">
-              <el-switch
-                v-model="formData.is_active"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="启用"
-                inactive-text="禁用"
+                :rows="8"
+                placeholder="在此输入贺卡文本内容，可使用 {{name}}、{{department}}、{{position}}、{{blessing}} 占位符"
               />
             </el-form-item>
 
@@ -163,18 +146,20 @@ const formData = reactive<Partial<Template>>({
   match_age_min: null,
   match_age_max: null,
   match_interests: '',
+  // 后端仍使用 html_content 字段；前端管理员使用 text_content 编辑，提交时会注入到原始 HTML 模板中
   html_content: '',
-  is_active: 1
+  text_content: ''
 })
+
+// 保存原始 HTML 结构，编辑时仅替换内容区域
+const originalHtml = ref('')
 
 // 表单验证规则
 const rules = reactive<FormRules>({
   name: [
     { required: true, message: '请输入模板名称', trigger: 'blur' }
   ],
-  html_content: [
-    { required: true, message: '请输入HTML模板内容', trigger: 'blur' }
-  ]
+  // HTML 内容校验已移除（前端不再编辑原始 HTML 文本）
 })
 
 // 加载状态
@@ -185,11 +170,36 @@ const submitting = ref(false)
 const showPreview = ref(false)
 const previewHtml = ref('')
 
-// 刷新预览
-const refreshPreview = async () => {
-  if (!formData.html_content) return
+// 将纯文本注入原始 HTML 模板（保留 CSS/布局，仅替换内容区域）
+const injectTextIntoTemplate = (text: string, html: string): string => {
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const escaped = escapeHtml(text)
+  const paragraphs = escaped.split(/\n{2,}/).map(p => p.replace(/\n/g, '<br/>'))
+  const contentHtml = paragraphs.map(p => `<p>${p}</p>`).join('')
 
-  if (isEdit.value && route.params.id) {
+  if (!html) return contentHtml
+
+  // 尝试找到 </style> 和 </body> 之间的内容区域并替换
+  const styleEnd = html.indexOf('</style>')
+  const bodyEnd = html.indexOf('</body>')
+  if (styleEnd !== -1 && bodyEnd !== -1 && bodyEnd > styleEnd) {
+    const before = html.substring(0, styleEnd + 8)
+    const after = html.substring(bodyEnd)
+    return `${before}\n<body>\n<div class="card-content">\n${contentHtml}\n</div>\n</body>\n${after}`
+  }
+
+  // 回退：直接返回简单 HTML
+  return contentHtml
+}
+
+// 刷新预览：优先使用纯文本编辑内容，其次回退到后端 html_content
+const refreshPreview = async () => {
+  const hasText = !!formData.text_content
+
+  if (!hasText && !formData.html_content) return
+
+  if (isEdit.value && route.params.id && !formData.text_content) {
     try {
       previewHtml.value = await previewTemplate(Number(route.params.id))
       return
@@ -198,11 +208,18 @@ const refreshPreview = async () => {
     }
   }
 
-  previewHtml.value = formData.html_content
+  const source = formData.text_content || formData.html_content || ''
+  const rawHtml = formData.text_content
+    ? injectTextIntoTemplate(source, originalHtml.value || formData.html_content)
+    : source
+
+  previewHtml.value = rawHtml
     .replace(/\{\{name\}\}/g, '张三')
     .replace(/\{\{department\}\}/g, '技术部')
     .replace(/\{\{position\}\}/g, '工程师')
+    .replace(/\{\{sender\}\}/g, '公司工会')
     .replace(/\{\{blessing\}\}/g, '祝您生日快乐，事业蒸蒸日上！')
+    .replace(/\{\{year\}\}/g, new Date().getFullYear().toString())
 }
 
 // 切换预览
@@ -222,6 +239,8 @@ const loadTemplateDetail = async () => {
     const id = Number(route.params.id)
     const detail = await getTemplateDetail(id)
     
+    originalHtml.value = detail.html_content || ''
+
     Object.assign(formData, {
       name: detail.name,
       description: detail.description || '',
@@ -230,7 +249,10 @@ const loadTemplateDetail = async () => {
       match_age_max: detail.match_age_max,
       match_interests: detail.match_interests || '',
       html_content: detail.html_content,
-      is_active: detail.is_active
+      // 将后端 html_content 初步转换为纯文本以便编辑（移除标签，保留换行）
+      text_content: detail.html_content
+        ? detail.html_content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '')
+        : ''
     })
   } catch (error) {
     console.error('加载模板详情失败：', error)
@@ -250,6 +272,13 @@ const handleSubmit = async () => {
     
     submitting.value = true
     try {
+      // 在提交前，将编辑的文本注入原始 HTML 模板，保留样式和布局
+      if (formData.text_content) {
+        ;(formData as any).html_content = injectTextIntoTemplate(
+          formData.text_content,
+          originalHtml.value || formData.html_content
+        )
+      }
       if (isEdit.value) {
         await updateTemplate(Number(route.params.id), formData as Template)
         ElMessage.success('修改成功')
