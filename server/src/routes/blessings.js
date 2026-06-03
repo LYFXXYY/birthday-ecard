@@ -1,0 +1,94 @@
+import { Router } from 'express';
+import { success, error } from '../utils/response.js';
+import { authMiddleware } from '../middlewares/auth.js';
+import { Blessing } from '../models/index.js';
+
+const router = Router();
+
+router.use(authMiddleware);
+
+const BLESSING_FIELDS = [
+  'content',
+  'match_gender',
+  'match_age_min',
+  'match_age_max',
+  'is_active'
+];
+
+const sanitizeInput = (obj) => {
+  const sanitized = {};
+  for (const key of BLESSING_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      sanitized[key] = obj[key];
+    }
+  }
+  return sanitized;
+};
+
+// GET /api/blessings - 祝福语列表
+router.get('/', async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.is_active !== undefined) {
+      where.is_active = req.query.is_active === '1' || req.query.is_active === 'true';
+    }
+    const blessings = await Blessing.findAll({ where, order: [['created_at', 'DESC']] });
+    success(res, blessings);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// GET /api/blessings/:id - 祝福语详情
+router.get('/:id', async (req, res) => {
+  try {
+    const blessing = await Blessing.findByPk(req.params.id);
+    if (!blessing) {
+      return error(res, '祝福语不存在', 404);
+    }
+    success(res, blessing);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// POST /api/blessings - 新增祝福语
+router.post('/', async (req, res) => {
+  try {
+    const blessing = await Blessing.create(sanitizeInput(req.body));
+    success(res, blessing, '添加成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// PUT /api/blessings/:id - 修改祝福语
+router.put('/:id', async (req, res) => {
+  try {
+    const [updated] = await Blessing.update(
+      sanitizeInput(req.body),
+      { where: { id: req.params.id } }
+    );
+    if (!updated) {
+      return error(res, '祝福语不存在', 404);
+    }
+    success(res, null, '修改成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// DELETE /api/blessings/:id - 删除祝福语
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Blessing.destroy({ where: { id: req.params.id } });
+    if (!deleted) {
+      return error(res, '祝福语不存在', 404);
+    }
+    success(res, null, '删除成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+export default router;

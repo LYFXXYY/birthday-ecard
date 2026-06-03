@@ -10,6 +10,7 @@ export interface Template {
   match_age_max?: number | null
   match_interests?: string | null
   html_content: string
+  default_blessing_id?: number | null
   preview_image?: string | null
   is_active?: number
   created_at?: string

@@ -19,6 +19,11 @@ const MIGRATIONS = [
     table: 'send_records',
     column: 'retry_count',
     sql: "ALTER TABLE send_records ADD COLUMN retry_count INT DEFAULT 0"
+  },
+  {
+    table: 'templates',
+    column: 'default_blessing_id',
+    sql: "ALTER TABLE templates ADD COLUMN default_blessing_id INT NULL"
   }
 ];
 

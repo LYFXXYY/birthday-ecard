@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
-import { sequelize, Employee, Template, SendRecord } from '../models/index.js';
+import { sequelize, Employee, Template, Blessing, SendRecord } from '../models/index.js';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { parseEmployeeExcel, validateEmployee } from '../utils/excelParser.js';
@@ -197,7 +197,7 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/generate-card', async (req, res) => {
   try {
     const employee = await Employee.findByPk(req.params.id, {
-      include: [{ model: Template, as: 'default_template' }]
+      include: [{ model: Template, as: 'default_template', include: [{ model: Blessing, as: 'default_blessing' }] }]
     });
 
     if (!employee) {

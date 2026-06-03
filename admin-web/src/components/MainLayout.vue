@@ -45,6 +45,11 @@
             <template #title>模板管理</template>
           </el-menu-item>
 
+          <el-menu-item index="/blessings">
+            <el-icon><ChatDotRound /></el-icon>
+            <template #title>祝福语管理</template>
+          </el-menu-item>
+
           <el-menu-item index="/records">
             <el-icon><Document /></el-icon>
             <template #title>发送记录</template>
@@ -104,6 +109,7 @@ import {
   Plus, 
   Upload, 
   Picture, 
+  ChatDotRound,
   Document,
   Fold,
   Expand,

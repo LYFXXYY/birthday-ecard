@@ -45,9 +45,9 @@
 
             <!-- 操作按钮：预览与编辑（新增/删除已移除） -->
             <div class="template-actions">
-              <el-button type="info" @click="handlePreview(template)">
-                <el-icon><View /></el-icon>
-                预览
+              <el-button type="info" @click="handleOpenPreviewWindow(template)">
+                <el-icon><Expand /></el-icon>
+                新窗口预览
               </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
@@ -58,26 +58,13 @@
         </div>
       </div>
     </el-card>
-
-    <!-- 预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      title="模板预览"
-      width="800px"
-      :close-on-click-modal="false"
-    >
-      <div class="preview-container" v-html="previewContent"></div>
-      <template #footer>
-        <el-button @click="previewVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, View, Edit } from '@element-plus/icons-vue'
+import { Picture, Edit, Expand } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getTemplateList, previewTemplate } from '@/api/templates'
 import type { Template } from '@/api/templates'
@@ -87,10 +74,6 @@ const router = useRouter()
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
-
-// 预览对话框
-const previewVisible = ref(false)
-const previewContent = ref('')
 
 // 获取性别文字
 const getGenderText = (gender?: string) => {
@@ -122,18 +105,33 @@ const handleEdit = (template: Template) => {
 }
 
 // 预览模板
-const handlePreview = async (template: Template) => {
-  previewVisible.value = true
+const openPreviewWindow = (html: string, title = '模板预览') => {
+  const previewWindow = window.open('', '_blank')
+  if (!previewWindow) {
+    ElMessage.error('弹窗被拦截，请允许弹窗')
+    return
+  }
+
+  previewWindow.document.open()
+  previewWindow.document.write(html)
+  previewWindow.document.close()
+  previewWindow.document.title = title
+}
+
+const handleOpenPreviewWindow = async (template: Template) => {
   if (!template.id) {
-    previewContent.value = template.html_content || '<p>暂无内容</p>'
+    const html = template.html_content || '<p>暂无内容</p>'
+    openPreviewWindow(html, template.name || '模板预览')
     return
   }
 
   try {
-    previewContent.value = await previewTemplate(template.id)
+    const html = await previewTemplate(template.id)
+    openPreviewWindow(html, template.name || '模板预览')
   } catch (error) {
-    console.error('预览模板失败，使用本地内容回退：', error)
-    previewContent.value = template.html_content || '<p>暂无内容</p>'
+    console.error('新窗口预览失败，使用本地回退：', error)
+    const html = template.html_content || '<p>暂无内容</p>'
+    openPreviewWindow(html, template.name || '模板预览')
   }
 }
 
@@ -240,14 +238,6 @@ onMounted(() => {
 
 .template-actions .el-button {
   flex: 1;
-}
-
-.preview-container {
-  max-height: 600px;
-  overflow-y: auto;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
 }
 
 /* 移动端适配 */

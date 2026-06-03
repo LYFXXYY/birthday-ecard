@@ -29,13 +29,12 @@ export const generateCard = async (template, employee) => {
     let html = template.html_content;
     
     // 生成祝福语（简化版本，实际可更复杂）
-    const blessings = [
+    const blessing = template.default_blessing?.content || [
       `生日快乐！愿你永远开心如意！`,
       `祝你生日快乐，身体健康，工作顺利！`,
       `愿你的每一天都充满阳光和欢笑！`,
       `生日快乐！愿你心想事成，万事如意！`
-    ];
-    const blessing = blessings[Math.floor(Math.random() * blessings.length)];
+    ][Math.floor(Math.random() * 4)];
 
     // 替换占位符
     const replacements = {
