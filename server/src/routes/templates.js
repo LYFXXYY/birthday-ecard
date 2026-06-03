@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
-import { Template } from '../models/index.js';
+import { Template, Blessing } from '../models/index.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +20,7 @@ router.use(authMiddleware);
 const TEMPLATE_FIELDS = [
   'name', 'description', 'match_gender',
   'match_age_min', 'match_age_max', 'match_interests',
-  'html_content', 'preview_image', 'is_active'
+  'html_content', 'default_blessing_id', 'preview_image', 'is_active'
 ];
 
 const sanitizeInput = (obj) => {
@@ -37,7 +37,7 @@ const sanitizeInput = (obj) => {
 router.get('/', async (req, res) => {
   try {
     const templates = await Template.findAll({
-      attributes: ['id', 'name', 'description', 'match_gender', 'match_age_min', 'match_age_max', 'is_active', 'created_at']
+      attributes: ['id', 'name', 'description', 'match_gender', 'match_age_min', 'match_age_max', 'default_blessing_id', 'is_active', 'created_at']
     });
     success(res, templates);
   } catch (err) {
@@ -48,7 +48,9 @@ router.get('/', async (req, res) => {
 // GET /api/templates/:id - 获取模板详情（包含html_content）
 router.get('/:id', async (req, res) => {
   try {
-    const template = await Template.findByPk(req.params.id);
+        const template = await Template.findByPk(req.params.id, {
+      include: [{ model: Blessing, as: 'default_blessing' }]
+    });
     
     if (!template) {
       return error(res, '模板不存在', 404);
@@ -106,7 +108,9 @@ router.delete('/:id', async (req, res) => {
 // GET /api/templates/:id/preview - 预览模板渲染效果
 router.get('/:id/preview', async (req, res) => {
   try {
-    const template = await Template.findByPk(req.params.id);
+    const template = await Template.findByPk(req.params.id, {
+      include: [{ model: Blessing, as: 'default_blessing' }]
+    });
     
     if (!template) {
       return error(res, '模板不存在', 404);
@@ -120,7 +124,7 @@ router.get('/:id/preview', async (req, res) => {
       '{{position}}': '工程师',
       '{{birthday}}': '6月15日',
       '{{sender}}': '公司工会',
-      '{{blessing}}': '祝你生日快乐，万事如意！',
+      '{{blessing}}': template.default_blessing?.content || '祝你生日快乐，万事如意！',
       '{{year}}': new Date().getFullYear().toString()
     };
 

@@ -14,6 +14,7 @@ import { errorHandler } from './middlewares/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import employeeRoutes from './routes/employees.js';
 import templateRoutes from './routes/templates.js';
+import blessingRoutes from './routes/blessings.js';
 import recordRoutes from './routes/records.js';
 import cardRoutes from './routes/card.js';
 import initDefaultAdmin from './utils/initAdmin.js';
@@ -51,6 +52,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/blessings', blessingRoutes);
 app.use('/api/records', recordRoutes);
 
 // 贺卡访问路由（无需认证）

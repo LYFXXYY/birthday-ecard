@@ -56,6 +56,22 @@ const routes: RouteRecordRaw[] = [
         props: true
       },
       {
+        path: 'blessings',
+        name: 'Blessings',
+        component: () => import('@/views/BlessingList.vue')
+      },
+      {
+        path: 'blessings/add',
+        name: 'BlessingAdd',
+        component: () => import('@/views/BlessingEdit.vue')
+      },
+      {
+        path: 'blessings/:id/edit',
+        name: 'BlessingEdit',
+        component: () => import('@/views/BlessingEdit.vue'),
+        props: true
+      },
+      {
         path: 'records',
         name: 'SendRecords',
         component: () => import('@/views/SendRecords.vue')

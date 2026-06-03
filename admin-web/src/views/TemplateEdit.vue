@@ -13,6 +13,10 @@
               <el-icon><View /></el-icon>
               {{ showPreview ? '隐藏预览' : '显示预览' }}
             </el-button>
+            <el-button type="success" @click="openPreviewWindow" v-if="isEdit">
+              <el-icon><Expand /></el-icon>
+              新窗口预览
+            </el-button>
           </div>
         </div>
       </template>
@@ -80,6 +84,38 @@
               />
             </el-form-item>
 
+            <el-form-item label="默认祝福语" prop="default_blessing_id">
+              <el-select
+                v-model="formData.default_blessing_id"
+                placeholder="请选择默认祝福语（可选）"
+                clearable
+              >
+                <el-option
+                  v-for="blessing in blessings"
+                  :key="blessing.id"
+                  :label="blessing.content.length > 30 ? blessing.content.slice(0, 30) + '...' : blessing.content"
+                  :value="blessing.id"
+                />
+              </el-select>
+              <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{blessing}} 占位符。</div>
+            </el-form-item>
+
+            <el-form-item label="默认祝福语" prop="default_blessing_id">
+              <el-select
+                v-model="formData.default_blessing_id"
+                placeholder="请选择默认祝福语（可选）"
+                clearable
+              >
+                <el-option
+                  v-for="blessing in blessings"
+                  :key="blessing.id"
+                  :label="blessing.content.length > 30 ? blessing.content.slice(0, 30) + '...' : blessing.content"
+                  :value="blessing.id"
+                />
+              </el-select>
+              <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{blessing}} 占位符。</div>
+            </el-form-item>
+
             <el-divider content-position="left">模板内容</el-divider>
 
             <!-- 使用纯文本编辑贺卡内容（管理员可通过占位符 {{name}} 等进行替换） -->
@@ -124,10 +160,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Back, View, Refresh } from '@element-plus/icons-vue'
+import { Back, View, Refresh, Expand } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { createTemplate, updateTemplate, getTemplateDetail, previewTemplate } from '@/api/templates'
+import { getBlessingList } from '@/api/blessings'
 import type { Template } from '@/api/templates'
+import type { Blessing } from '@/api/blessings'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,6 +184,7 @@ const formData = reactive<Partial<Template>>({
   match_age_min: null,
   match_age_max: null,
   match_interests: '',
+  default_blessing_id: null,
   // 后端仍使用 html_content 字段；前端管理员使用 text_content 编辑，提交时会注入到原始 HTML 模板中
   html_content: '',
   text_content: ''
@@ -165,6 +204,8 @@ const rules = reactive<FormRules>({
 // 加载状态
 const loading = ref(false)
 const submitting = ref(false)
+
+const blessings = ref<Blessing[]>([])
 
 // 预览控制
 const showPreview = ref(false)
@@ -193,6 +234,15 @@ const injectTextIntoTemplate = (text: string, html: string): string => {
   return contentHtml
 }
 
+const decodeHtmlEntities = (text: string) => {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+}
+
 // 刷新预览：优先使用纯文本编辑内容，其次回退到后端 html_content
 const refreshPreview = async () => {
   const hasText = !!formData.text_content
@@ -213,16 +263,57 @@ const refreshPreview = async () => {
     ? injectTextIntoTemplate(source, originalHtml.value || formData.html_content)
     : source
 
-  previewHtml.value = rawHtml
-    .replace(/\{\{name\}\}/g, '张三')
-    .replace(/\{\{department\}\}/g, '技术部')
-    .replace(/\{\{position\}\}/g, '工程师')
-    .replace(/\{\{sender\}\}/g, '公司工会')
-    .replace(/\{\{blessing\}\}/g, '祝您生日快乐，事业蒸蒸日上！')
-    .replace(/\{\{year\}\}/g, new Date().getFullYear().toString())
+  const selectedBlessing = blessings.value.find(b => b.id === formData.default_blessing_id)
+  const blessingText = selectedBlessing?.content || '祝您生日快乐，事业蒸蒸日上！'
+
+  previewHtml.value = decodeHtmlEntities(
+    rawHtml
+      .replace(/\{\{name\}\}/g, '张三')
+      .replace(/\{\{department\}\}/g, '技术部')
+      .replace(/\{\{position\}\}/g, '工程师')
+      .replace(/\{\{sender\}\}/g, '公司工会')
+      .replace(/\{\{blessing\}\}/g, blessingText)
+      .replace(/\{\{year\}\}/g, new Date().getFullYear().toString())
+  )
 }
 
 // 切换预览
+const openPreviewWindow = async () => {
+  if (isEdit.value && route.params.id) {
+    try {
+      const html = await previewTemplate(Number(route.params.id))
+      const previewWindow = window.open('', '_blank')
+      if (!previewWindow) {
+        ElMessage.error('弹窗被拦截，请允许弹窗')
+        return
+      }
+      previewWindow.document.open()
+      previewWindow.document.write(html)
+      previewWindow.document.close()
+      previewWindow.document.title = formData.name || '模板预览'
+      return
+    } catch (error) {
+      console.error('后端预览打开失败，改为本地预览：', error)
+    }
+  }
+
+  await refreshPreview()
+  if (!previewHtml.value) {
+    ElMessage.warning('无法生成预览内容')
+    return
+  }
+
+  const previewWindow = window.open('', '_blank')
+  if (!previewWindow) {
+    ElMessage.error('弹窗被拦截，请允许弹窗')
+    return
+  }
+  previewWindow.document.open()
+  previewWindow.document.write(previewHtml.value)
+  previewWindow.document.close()
+  previewWindow.document.title = formData.name || '模板预览'
+}
+
 const togglePreview = () => {
   showPreview.value = !showPreview.value
   if (showPreview.value) {
@@ -247,8 +338,7 @@ const loadTemplateDetail = async () => {
       match_gender: detail.match_gender || 'all',
       match_age_min: detail.match_age_min,
       match_age_max: detail.match_age_max,
-      match_interests: detail.match_interests || '',
-      html_content: detail.html_content,
+      match_interests: detail.match_interests || '',      default_blessing_id: detail.default_blessing_id || null,      html_content: detail.html_content,
       // 将后端 html_content 初步转换为纯文本以便编辑（移除标签，保留换行）
       text_content: detail.html_content
         ? detail.html_content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '')
@@ -297,6 +387,15 @@ const handleSubmit = async () => {
   })
 }
 
+const loadBlessings = async () => {
+  try {
+    blessings.value = await getBlessingList({ is_active: 1 })
+  } catch (error) {
+    console.error('加载祝福语列表失败：', error)
+    blessings.value = []
+  }
+}
+
 // 返回
 const handleBack = () => {
   router.back()
@@ -304,6 +403,7 @@ const handleBack = () => {
 
 // 页面加载时获取数据
 onMounted(() => {
+  loadBlessings()
   loadTemplateDetail()
 })
 </script>
