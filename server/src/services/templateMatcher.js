@@ -1,5 +1,5 @@
 // 模板匹配服务
-import { Template } from '../models/index.js';
+import { Template, Blessing } from '../models/index.js';
 
 /**
  * 根据员工信息匹配最佳模板
@@ -8,7 +8,9 @@ import { Template } from '../models/index.js';
 export const matchTemplate = async (employee) => {
   // 1. 如果员工有手动指定的模板，直接使用
   if (employee.default_template_id) {
-    return await Template.findByPk(employee.default_template_id);
+    return await Template.findByPk(employee.default_template_id, {
+      include: [{ model: Blessing, as: 'default_blessing' }]
+    });
   }
 
   // 2. 计算员工年龄
@@ -23,7 +25,8 @@ export const matchTemplate = async (employee) => {
   // 3. 查找匹配的模板（按优先级排序）
   const templates = await Template.findAll({ 
     where: { is_active: true },
-    order: [['match_gender', 'ASC']] // 优先级：all > male > female
+    order: [['match_gender', 'ASC']], // 优先级：all > male > female
+    include: [{ model: Blessing, as: 'default_blessing' }]
   });
 
   // 精确匹配：性别 + 年龄段

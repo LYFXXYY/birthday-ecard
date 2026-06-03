@@ -45,9 +45,9 @@
 
             <!-- 操作按钮：预览与编辑（新增/删除已移除） -->
             <div class="template-actions">
-              <el-button type="info" @click="handlePreview(template)">
-                <el-icon><View /></el-icon>
-                预览
+              <el-button type="info" @click="handleOpenPreviewWindow(template)">
+                <el-icon><Expand /></el-icon>
+                新窗口预览
               </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
@@ -77,7 +77,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, View, Edit } from '@element-plus/icons-vue'
+import { Picture, Edit, Expand } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getTemplateList, previewTemplate } from '@/api/templates'
 import type { Template } from '@/api/templates'
@@ -122,18 +122,33 @@ const handleEdit = (template: Template) => {
 }
 
 // 预览模板
-const handlePreview = async (template: Template) => {
-  previewVisible.value = true
+const openPreviewWindow = (html: string, title = '模板预览') => {
+  const previewWindow = window.open('', '_blank')
+  if (!previewWindow) {
+    ElMessage.error('弹窗被拦截，请允许弹窗')
+    return
+  }
+
+  previewWindow.document.open()
+  previewWindow.document.write(html)
+  previewWindow.document.close()
+  previewWindow.document.title = title
+}
+
+const handleOpenPreviewWindow = async (template: Template) => {
   if (!template.id) {
-    previewContent.value = template.html_content || '<p>暂无内容</p>'
+    const html = template.html_content || '<p>暂无内容</p>'
+    openPreviewWindow(html, template.name || '模板预览')
     return
   }
 
   try {
-    previewContent.value = await previewTemplate(template.id)
+    const html = await previewTemplate(template.id)
+    openPreviewWindow(html, template.name || '模板预览')
   } catch (error) {
-    console.error('预览模板失败，使用本地内容回退：', error)
-    previewContent.value = template.html_content || '<p>暂无内容</p>'
+    console.error('新窗口预览失败，使用本地回退：', error)
+    const html = template.html_content || '<p>暂无内容</p>'
+    openPreviewWindow(html, template.name || '模板预览')
   }
 }
 
