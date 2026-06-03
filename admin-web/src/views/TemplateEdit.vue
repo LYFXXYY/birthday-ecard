@@ -100,22 +100,6 @@
               <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{blessing}} 占位符。</div>
             </el-form-item>
 
-            <el-form-item label="默认祝福语" prop="default_blessing_id">
-              <el-select
-                v-model="formData.default_blessing_id"
-                placeholder="请选择默认祝福语（可选）"
-                clearable
-              >
-                <el-option
-                  v-for="blessing in blessings"
-                  :key="blessing.id"
-                  :label="blessing.content.length > 30 ? blessing.content.slice(0, 30) + '...' : blessing.content"
-                  :value="blessing.id"
-                />
-              </el-select>
-              <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{blessing}} 占位符。</div>
-            </el-form-item>
-
             <el-divider content-position="left">模板内容</el-divider>
 
             <!-- 使用纯文本编辑贺卡内容（管理员可通过占位符 {{name}} 等进行替换） -->
@@ -211,36 +195,58 @@ const blessings = ref<Blessing[]>([])
 const showPreview = ref(false)
 const previewHtml = ref('')
 
-// 将纯文本注入原始 HTML 模板（保留 CSS/布局，仅替换内容区域）
-const injectTextIntoTemplate = (text: string, html: string): string => {
-  const escapeHtml = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const escaped = escapeHtml(text)
-  const paragraphs = escaped.split(/\n{2,}/).map(p => p.replace(/\n/g, '<br/>'))
-  const contentHtml = paragraphs.map(p => `<p>${p}</p>`).join('')
+// 从 HTML 模板中提取可编辑区域的文本内容（<!-- editable-start --> 和 <!-- editable-end --> 之间）
+const extractEditableText = (html: string): string => {
+  if (!html) return ''
+  const startMarker = '<!-- editable-start -->'
+  const endMarker = '<!-- editable-end -->'
+  const startIdx = html.indexOf(startMarker)
+  const endIdx = html.indexOf(endMarker)
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return ''
 
-  if (!html) return contentHtml
-
-  // 尝试找到 </style> 和 </body> 之间的内容区域并替换
-  const styleEnd = html.indexOf('</style>')
-  const bodyEnd = html.indexOf('</body>')
-  if (styleEnd !== -1 && bodyEnd !== -1 && bodyEnd > styleEnd) {
-    const before = html.substring(0, styleEnd + 8)
-    const after = html.substring(bodyEnd)
-    return `${before}\n<body>\n<div class="card-content">\n${contentHtml}\n</div>\n</body>\n${after}`
-  }
-
-  // 回退：直接返回简单 HTML
-  return contentHtml
-}
-
-const decodeHtmlEntities = (text: string) => {
-  return text
+  const region = html.substring(startIdx + startMarker.length, endIdx)
+  // 提取标签内的文本内容，移除 HTML 标签
+  return region
+    .replace(/<[^>]*class="[^"]*"[^>]*>(.*?)<\/[^>]+>/gs, '$1')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .trim()
+}
+
+// 将编辑后的文本注入原始 HTML 模板的可编辑区域（保留 CSS/布局不变）
+const injectTextIntoTemplate = (text: string, html: string): string => {
+  if (!html) return ''
+
+  const startMarker = '<!-- editable-start -->'
+  const endMarker = '<!-- editable-end -->'
+  const startIdx = html.indexOf(startMarker)
+  const endIdx = html.indexOf(endMarker)
+
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
+    // 没有标记，直接返回原始 HTML（不破坏模板）
+    return html
+  }
+
+  const before = html.substring(0, startIdx + startMarker.length)
+  const after = html.substring(endIdx)
+
+  // 转义 HTML 特殊字符
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // 将文本段落转换为 HTML（双换行分段，单换行用 br）
+  const paragraphs = escaped.split(/\n{2,}/).map(p => p.replace(/\n/g, '<br/>'))
+  const contentHtml = paragraphs.map(p => `<p>${p}</p>`).join('\n')
+
+  // 用新内容替换标记之间的区域，保持 div 结构
+  return `${before}\n<div class="blessing-content">\n${contentHtml}\n</div>\n${after}`
 }
 
 // 刷新预览：优先使用纯文本编辑内容，其次回退到后端 html_content
@@ -259,22 +265,21 @@ const refreshPreview = async () => {
   }
 
   const source = formData.text_content || formData.html_content || ''
-  const rawHtml = formData.text_content
-    ? injectTextIntoTemplate(source, originalHtml.value || formData.html_content)
+  // 将编辑的文本注入原始模板，生成完整 HTML 用于预览
+  const rawHtml = formData.text_content && originalHtml.value
+    ? injectTextIntoTemplate(source, originalHtml.value)
     : source
 
   const selectedBlessing = blessings.value.find(b => b.id === formData.default_blessing_id)
   const blessingText = selectedBlessing?.content || '祝您生日快乐，事业蒸蒸日上！'
 
-  previewHtml.value = decodeHtmlEntities(
-    rawHtml
+  previewHtml.value = rawHtml
       .replace(/\{\{name\}\}/g, '张三')
       .replace(/\{\{department\}\}/g, '技术部')
       .replace(/\{\{position\}\}/g, '工程师')
       .replace(/\{\{sender\}\}/g, '公司工会')
       .replace(/\{\{blessing\}\}/g, blessingText)
       .replace(/\{\{year\}\}/g, new Date().getFullYear().toString())
-  )
 }
 
 // 切换预览
@@ -338,11 +343,11 @@ const loadTemplateDetail = async () => {
       match_gender: detail.match_gender || 'all',
       match_age_min: detail.match_age_min,
       match_age_max: detail.match_age_max,
-      match_interests: detail.match_interests || '',      default_blessing_id: detail.default_blessing_id || null,      html_content: detail.html_content,
-      // 将后端 html_content 初步转换为纯文本以便编辑（移除标签，保留换行）
-      text_content: detail.html_content
-        ? detail.html_content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '')
-        : ''
+      match_interests: detail.match_interests || '',
+      default_blessing_id: detail.default_blessing_id || null,
+      html_content: detail.html_content,
+      // 只提取可编辑区域的文本内容（标记之间的部分）
+      text_content: extractEditableText(detail.html_content || '')
     })
   } catch (error) {
     console.error('加载模板详情失败：', error)
@@ -362,11 +367,11 @@ const handleSubmit = async () => {
     
     submitting.value = true
     try {
-      // 在提交前，将编辑的文本注入原始 HTML 模板，保留样式和布局
-      if (formData.text_content) {
+      // 将编辑的文本注入原始 HTML 模板的可编辑区域（保留完整模板结构）
+      if (formData.text_content && originalHtml.value) {
         ;(formData as any).html_content = injectTextIntoTemplate(
           formData.text_content,
-          originalHtml.value || formData.html_content
+          originalHtml.value
         )
       }
       if (isEdit.value) {

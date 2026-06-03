@@ -58,19 +58,6 @@
         </div>
       </div>
     </el-card>
-
-    <!-- 预览对话框 -->
-    <el-dialog
-      v-model="previewVisible"
-      title="模板预览"
-      width="800px"
-      :close-on-click-modal="false"
-    >
-      <div class="preview-container" v-html="previewContent"></div>
-      <template #footer>
-        <el-button @click="previewVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -87,10 +74,6 @@ const router = useRouter()
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
-
-// 预览对话框
-const previewVisible = ref(false)
-const previewContent = ref('')
 
 // 获取性别文字
 const getGenderText = (gender?: string) => {
@@ -255,14 +238,6 @@ onMounted(() => {
 
 .template-actions .el-button {
   flex: 1;
-}
-
-.preview-container {
-  max-height: 600px;
-  overflow-y: auto;
-  padding: 20px;
-  background: #f5f7fa;
-  border-radius: 4px;
 }
 
 /* 移动端适配 */
