@@ -100,8 +100,8 @@
           <!-- 错误详情 -->
           <div v-if="importResult.errors && importResult.errors.length > 0" class="error-details">
             <h4>失败详情</h4>
-            <el-table :data="importResult.errors" border size="small">
-              <el-table-column type="index" label="序号" width="60" />
+            <el-table :data="importResult.errors.map((msg, i) => ({ index: i + 1, message: msg }))" border size="small">
+              <el-table-column prop="index" label="序号" width="60" />
               <el-table-column prop="message" label="错误信息" />
             </el-table>
           </div>
@@ -205,18 +205,32 @@ const handleImport = async () => {
 
   importing.value = true
   try {
-    importResult.value = await importEmployees(selectedFile.value)
+    const response = await importEmployees(selectedFile.value)
+    const { code, message, data } = response.data || response
     
-    if (importResult.value.success > 0) {
-      ElMessage.success(`成功导入 ${importResult.value.success} 条数据`)
+    if (code === 200 || code === 0) {
+      // 导入成功
+      importResult.value = {
+        success: data.imported || 0,
+        failed: 0,
+        errors: []
+      }
+      ElMessage.success(message || `成功导入 ${data.imported} 条数据`)
+    } else if (data?.errors && Array.isArray(data.errors)) {
+      // 数据验证失败，展示详细错误
+      importResult.value = {
+        success: data.valid || 0,
+        failed: data.errors.length,
+        errors: data.errors.map((e: any) => typeof e === 'string' ? e : `第${e.row}行: ${e.reason}`)
+      }
+      ElMessage.error(message || '部分数据验证失败')
+    } else {
+      // 其他错误
+      ElMessage.error(message || '导入失败，请检查文件格式')
     }
-    
-    if (importResult.value.failed > 0) {
-      ElMessage.warning(`${importResult.value.failed} 条数据导入失败，请查看失败详情`)
-    }
-  } catch (error) {
+  } catch (error: any) {
     console.error('导入失败：', error)
-    ElMessage.error('导入失败，请检查文件格式或联系管理员')
+    ElMessage.error('网络错误或服务器异常，请稍后重试')
   } finally {
     importing.value = false
   }

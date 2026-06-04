@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
+import { fileURLToPath } from 'url';
 import { sequelize, Employee, Template, Blessing, SendRecord } from '../models/index.js';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
@@ -10,14 +11,18 @@ import { Op } from 'sequelize';
 import { generateCard } from '../services/cardGenerator.js';
 import { sendSMS } from '../services/smsService.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const UPLOAD_DIR = path.join(__dirname, '..', '..', '..', 'uploads');
+
 const router = Router();
 
 // 所有员工路由需要认证
 router.use(authMiddleware);
 
-// 配置文件上传
+// 配置文件上传（使用绝对路径，避免 CWD 不一致问题）
 const upload = multer({
-  dest: '../uploads/',
+  dest: UPLOAD_DIR,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (['.xlsx', '.xls', '.csv'].includes(ext)) {
@@ -255,7 +260,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
       return error(res, '请上传Excel文件', 400);
     }
 
-    const employees = parseEmployeeExcel(req.file.path);
+    console.log(`[导入] 文件: ${req.file.originalname}, 路径: ${req.file.path}, 大小: ${req.file.size} bytes`);
+    const employees = parseEmployeeExcel(req.file.path, req.file.originalname);
     const errors = [];
 
     for (let i = 0; i < employees.length; i++) {
