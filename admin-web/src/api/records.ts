@@ -6,6 +6,7 @@ export interface SendRecord {
   employee_id: number
   template_id: number
   card_url: string
+  card_id?: string
   send_status: 'pending' | 'success' | 'failed'
   send_time?: string
   error_message?: string | null

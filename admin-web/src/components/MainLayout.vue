@@ -82,7 +82,6 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
                 <el-dropdown-item command="password">修改密码</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
@@ -90,6 +89,34 @@
           </el-dropdown>
         </div>
       </header>
+
+      <el-dialog
+        title="修改密码"
+        :model-value="passwordDialogVisible"
+        width="420px"
+        @close="resetPasswordForm"
+      >
+        <el-form
+          ref="passwordFormRef"
+          :model="passwordForm"
+          :rules="passwordRules"
+          label-width="100px"
+        >
+          <el-form-item label="原密码" prop="oldPassword">
+            <el-input v-model="passwordForm.oldPassword" type="password" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="新密码" prop="newPassword">
+            <el-input v-model="passwordForm.newPassword" type="password" autocomplete="off" />
+          </el-form-item>
+          <el-form-item label="确认密码" prop="confirmPassword">
+            <el-input v-model="passwordForm.confirmPassword" type="password" autocomplete="off" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="passwordDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitChangePassword">提交</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 内容区域 -->
       <main class="content">
@@ -117,6 +144,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { changePassword } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -127,6 +155,38 @@ const isCollapsed = ref(false)
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
+
+// 密码修改弹窗
+const passwordDialogVisible = ref(false)
+const passwordFormRef = ref()
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordRules = {
+  oldPassword: [
+    { required: true, message: '请输入原密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '新密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (rule: any, value: string, callback: any) => {
+        if (value !== passwordForm.value.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
 
 // 用户信息
 const displayName = computed(() => {
@@ -143,14 +203,39 @@ const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
 
+const resetPasswordForm = () => {
+  passwordForm.value.oldPassword = ''
+  passwordForm.value.newPassword = ''
+  passwordForm.value.confirmPassword = ''
+  passwordFormRef.value?.clearValidate()
+}
+
+const submitChangePassword = () => {
+  passwordFormRef.value?.validate(async (valid: boolean) => {
+    if (!valid) return
+
+    try {
+      await changePassword({
+        oldPassword: passwordForm.value.oldPassword,
+        newPassword: passwordForm.value.newPassword
+      })
+      ElMessage.success('密码修改成功，请重新登录')
+      passwordDialogVisible.value = false
+      resetPasswordForm()
+      userStore.clearAuth()
+      router.push('/login')
+    } catch (err: any) {
+      ElMessage.error(err?.message || '密码修改失败，请重试')
+    }
+  })
+}
+
 // 处理下拉菜单命令
 const handleCommand = async (command: string) => {
   switch (command) {
-    case 'profile':
-      ElMessage.info('个人信息功能开发中')
-      break
     case 'password':
-      ElMessage.info('修改密码功能开发中')
+      resetPasswordForm()
+      passwordDialogVisible.value = true
       break
     case 'logout':
       try {
