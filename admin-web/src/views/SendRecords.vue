@@ -83,8 +83,28 @@
       >
         <el-table-column prop="employee.name" label="员工姓名" width="100" />
         <el-table-column prop="employee.phone" label="手机号" width="130" />
-        <el-table-column prop="employee.department" label="部门" width="150" />
-        <el-table-column prop="template.name" label="使用模板" width="150" />
+        <el-table-column prop="employee.department" label="部门" width="120" />
+        <el-table-column label="短信内容" min-width="280">
+          <template #default="{ row }">
+            <div class="sms-content">
+              <div class="sms-line">亲爱的{{ row.employee?.name }}，祝您生日快乐！</div>
+              <div class="sms-line sms-link-line">
+                点击查看贺卡：
+                <el-button
+                  type="primary"
+                  link
+                  size="small"
+                  @click="handlePreviewCard(row)"
+                  :disabled="!row.card_url"
+                >
+                  <el-icon><Link /></el-icon>
+                  打开贺卡
+                </el-button>
+              </div>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="template.name" label="使用模板" width="130" />
         <el-table-column prop="send_status" label="发送状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.send_status)">
@@ -101,8 +121,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
+            <el-button
+              type="info"
+              size="small"
+              @click="handlePreviewCard(row)"
+              :disabled="!row.card_url"
+            >
+              <el-icon><View /></el-icon>
+              预览
+            </el-button>
             <el-button 
               type="primary" 
               size="small" 
@@ -127,13 +156,45 @@
           @current-change="handlePageChange"
         />
       </div>
+    <!-- 手机预览对话框 -->
+    <el-dialog
+      v-model="previewVisible"
+      title="贺卡手机预览"
+      width="440px"
+      :close-on-click-modal="true"
+      class="phone-preview-dialog"
+      destroy-on-close
+    >
+      <div class="phone-frame">
+        <div class="phone-notch"></div>
+        <div class="phone-status-bar">
+          <span class="phone-time">{{ currentTime }}</span>
+          <span class="phone-icons">●●●</span>
+        </div>
+        <iframe
+          v-if="previewCardUrl"
+          :src="previewCardUrl"
+          class="phone-screen"
+          sandbox="allow-scripts allow-same-origin"
+          frameborder="0"
+        ></iframe>
+        <div class="phone-home-bar"></div>
+      </div>
+      <template #footer>
+        <div class="preview-footer">
+          <el-text type="info" size="small" truncated class="preview-url">{{ previewCardUrl }}</el-text>
+          <el-button type="primary" @click="openInNewTab">在新标签页打开</el-button>
+          <el-button @click="previewVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, View, Link } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getRecordList, getRecordStats, testSend } from '@/api/records'
 import type { SendRecord, RecordQueryParams } from '@/api/records'
@@ -271,6 +332,35 @@ const handleTestSend = async (employeeId: number) => {
   }
 }
 
+// --- 手机预览功能 ---
+const previewVisible = ref(false)
+const previewCardUrl = ref('')
+const currentTime = ref('')
+
+// 获取当前时间（模拟手机状态栏）
+const updateTime = () => {
+  const now = new Date()
+  currentTime.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+}
+
+// 打开手机预览
+const handlePreviewCard = (row: SendRecord) => {
+  if (!row.card_url) {
+    ElMessage.warning('该记录无贺卡链接')
+    return
+  }
+  previewCardUrl.value = row.card_url
+  updateTime()
+  previewVisible.value = true
+}
+
+// 在新标签页打开
+const openInNewTab = () => {
+  if (previewCardUrl.value) {
+    window.open(previewCardUrl.value, '_blank')
+  }
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   loadStats()
@@ -344,6 +434,111 @@ onMounted(() => {
 .error-text {
   color: #f56c6c;
   cursor: pointer;
+}
+
+/* 短信内容样式 */
+.sms-content {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sms-line {
+  margin-bottom: 2px;
+}
+
+.sms-link-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #606266;
+}
+
+/* 手机预览对话框 */
+:deep(.phone-preview-dialog .el-dialog__body) {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: center;
+  background: #f0f2f5;
+}
+
+.phone-frame {
+  width: 375px;
+  height: 680px;
+  background: #000;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 2px #333;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-notch {
+  width: 120px;
+  height: 28px;
+  background: #000;
+  border-radius: 0 0 16px 16px;
+  margin: 0 auto;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.phone-status-bar {
+  height: 36px;
+  background: #000;
+  border-radius: 28px 28px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.phone-icons {
+  font-size: 8px;
+  letter-spacing: 2px;
+}
+
+.phone-screen {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+.phone-home-bar {
+  height: 28px;
+  background: #000;
+  border-radius: 0 0 28px 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.phone-home-bar::after {
+  content: '';
+  width: 100px;
+  height: 4px;
+  background: #666;
+  border-radius: 2px;
+}
+
+.preview-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-url {
+  flex: 1;
+  min-width: 0;
 }
 
 .pagination-container {
