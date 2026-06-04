@@ -244,13 +244,13 @@ const handleTestSend = async (employeeId: number) => {
   sendingId.value = employeeId
   try {
     const res = await testSend(employeeId)
-    const data = res?.data || res
-    const isSuccess = data?.data?.smsStatus === 'success'
+    // 拦截器已解包，res 直接是内层 data
+    const isSuccess = res?.smsStatus === 'success'
     if (isSuccess) {
       sentEmployeeIds.value.add(employeeId)
       ElMessage.success('测试发送成功')
     } else {
-      ElMessage.warning(data?.message || '贺卡生成成功，但短信发送失败')
+      ElMessage.warning('贺卡生成成功，但短信发送失败')
     }
   } catch (error) {
     ElMessage.error('测试发送失败')

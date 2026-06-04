@@ -53,6 +53,11 @@ request.interceptors.response.use(
     // 处理HTTP错误
     if (error.response) {
       const { status, data } = error.response
+
+      // 400 且包含验证错误详情时，不弹全局提示，将数据透传给调用方处理
+      if (status === 400 && data?.data?.errors) {
+        return Promise.resolve(data)
+      }
       
       switch (status) {
         case 401:
