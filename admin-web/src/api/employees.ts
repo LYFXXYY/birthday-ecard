@@ -1,4 +1,6 @@
 import request from './request'
+import axios from 'axios'
+import { useUserStore } from '@/stores/user'
 
 // 员工信息接口
 export interface Employee {
@@ -57,13 +59,24 @@ export const deleteEmployee = (id: number) => {
   return request.delete(`/employees/${id}`)
 }
 
-// Excel批量导入
-export const importEmployees = (file: File): Promise<{ success: number; failed: number; errors: string[] }> => {
+// Excel批量导入（直接调用 axios，绕过响应拦截器以获取详细验证错误）
+export const importEmployees = async (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
   
-  // 不要手动设置 Content-Type，让浏览器自动添加 boundary 参数
-  return request.post('/employees/import', formData)
+  const userStore = useUserStore()
+  const token = userStore.getToken()
+  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+  
+  const response = await axios.post(`${baseURL}/employees/import`, formData, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      // Content-Type 由浏览器自动设置 multipart/form-data + boundary
+    },
+    validateStatus: () => true  // 不抛出 HTTP 错误，由调用方处理
+  })
+  
+  return response
 }
 
 // 获取今天生日的员工

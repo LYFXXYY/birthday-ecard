@@ -79,11 +79,13 @@
           </div>
           <el-button 
             v-if="employee.id !== undefined"
-            type="success" 
+            :type="sentEmployeeIds.has(employee.id) ? 'info' : 'success'" 
+            :disabled="sentEmployeeIds.has(employee.id) || sendingId === employee.id"
+            :loading="sendingId === employee.id"
             size="small" 
             @click="handleTestSend(employee.id)"
           >
-            测试发送
+            {{ sentEmployeeIds.has(employee.id) ? '已发送' : (sendingId === employee.id ? '发送中...' : '测试发送') }}
           </el-button>
         </div>
       </div>
@@ -122,7 +124,7 @@ import { useRouter } from 'vue-router'
 import { User, Star, CircleCheck, Message, Refresh, Plus, Upload, Picture, Document } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getTodayBirthdayEmployees, getEmployeeList } from '@/api/employees'
-import { getRecordStats } from '@/api/records'
+import { getRecordStats, getRecordList } from '@/api/records'
 import { testSend } from '@/api/records'
 import type { Employee } from '@/api/employees'
 
@@ -144,6 +146,11 @@ const stats = ref({
 
 // 今日生日员工
 const todayBirthdays = ref<Employee[]>([])
+
+// 已发送的员工ID集合（含今天已成功发送的 + 本次会话中发送的）
+const sentEmployeeIds = ref<Set<number>>(new Set())
+// 当前正在发送的员工ID
+const sendingId = ref<number | null>(null)
 
 // 开发模式：通过环境变量控制是否使用模拟数据
 const isDevMode = import.meta.env.VITE_USE_MOCK === 'true'
@@ -177,6 +184,24 @@ const loadData = async () => {
     const empList = await getEmployeeList({ page: 1, pageSize: 1 })
     stats.value.totalEmployees = empList.total || 0
     
+    // 获取今日已成功发送的记录，预先禁用按钮
+    try {
+      const today = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+      // endDate 用明天的日期，避免 UTC 解析截断当天记录
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`
+      const todayRecords = await getRecordList({ page: 1, pageSize: 1000, status: 'success', startDate: todayStr, endDate: tomorrowStr })
+      todayRecords.list.forEach((r: any) => {
+        if (r.employee_id) sentEmployeeIds.value.add(r.employee_id)
+      })
+      console.log('[仪表盘] 今日已发送记录:', todayRecords.list.length, '条, 已发送员工:', [...sentEmployeeIds.value])
+    } catch (e) {
+      console.error('[仪表盘] 查询今日发送记录失败:', e)
+    }
+
     // 获取今日生日员工
     await refreshBirthdays()
   } catch (error) {
@@ -215,11 +240,22 @@ const refreshBirthdays = async () => {
 
 // 测试发送
 const handleTestSend = async (employeeId: number) => {
+  if (sentEmployeeIds.value.has(employeeId)) return
+  sendingId.value = employeeId
   try {
-    await testSend(employeeId)
-    ElMessage.success('测试发送成功')
+    const res = await testSend(employeeId)
+    const data = res?.data || res
+    const isSuccess = data?.data?.smsStatus === 'success'
+    if (isSuccess) {
+      sentEmployeeIds.value.add(employeeId)
+      ElMessage.success('测试发送成功')
+    } else {
+      ElMessage.warning(data?.message || '贺卡生成成功，但短信发送失败')
+    }
   } catch (error) {
     ElMessage.error('测试发送失败')
+  } finally {
+    sendingId.value = null
   }
 }
 
