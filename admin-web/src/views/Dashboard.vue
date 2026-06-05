@@ -130,6 +130,13 @@ import type { Employee } from '@/api/employees'
 
 const router = useRouter()
 
+// 模拟数据常量（开发模式使用）
+const MOCK_EMPLOYEES: Employee[] = [
+  { id: 1, name: '张三', gender: 'male', birthday: '1990-05-15', phone: '13800138001', department: '技术部', position: '工程师', is_active: 1 },
+  { id: 2, name: '李四', gender: 'female', birthday: '1992-05-15', phone: '13900139001', department: '市场部', position: '专员', is_active: 1 },
+  { id: 3, name: '王五', gender: 'male', birthday: '1988-05-15', phone: '13700137001', department: '人事部', position: '经理', is_active: 1 }
+]
+
 // 当前日期
 const currentDate = computed(() => {
   const date = new Date()
@@ -167,11 +174,7 @@ const loadData = async () => {
         totalSent: 1256
       }
       
-      todayBirthdays.value = [
-        { id: 1, name: '张三', gender: 'male', birthday: '1990-05-15', phone: '13800138001', department: '技术部', position: '工程师', is_active: 1 },
-        { id: 2, name: '李四', gender: 'female', birthday: '1992-05-15', phone: '13900139001', department: '市场部', position: '专员', is_active: 1 },
-        { id: 3, name: '王五', gender: 'male', birthday: '1988-05-15', phone: '13700137001', department: '人事部', position: '经理', is_active: 1 }
-      ]
+      todayBirthdays.value = MOCK_EMPLOYEES
       return
     }
     
@@ -220,11 +223,7 @@ const loadData = async () => {
 const refreshBirthdays = async () => {
   try {
     if (isDevMode) {
-      todayBirthdays.value = [
-        { id: 1, name: '张三', gender: 'male', birthday: '1990-05-15', phone: '13800138001', department: '技术部', position: '工程师', is_active: 1 },
-        { id: 2, name: '李四', gender: 'female', birthday: '1992-05-15', phone: '13900139001', department: '市场部', position: '专员', is_active: 1 },
-        { id: 3, name: '王五', gender: 'male', birthday: '1988-05-15', phone: '13700137001', department: '人事部', position: '经理', is_active: 1 }
-      ]
+      todayBirthdays.value = MOCK_EMPLOYEES
       stats.value.todayBirthdays = todayBirthdays.value.length
       return
     }

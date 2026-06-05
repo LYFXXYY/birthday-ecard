@@ -1,4 +1,5 @@
 import request from './request'
+import type { PageResponse } from './types'
 
 // 员工信息接口
 export interface Employee {
@@ -22,14 +23,6 @@ export interface EmployeeQueryParams {
   keyword?: string
   department?: string
   is_active?: number
-}
-
-// 分页响应
-export interface PageResponse<T> {
-  list: T[]
-  total: number
-  page: number
-  pageSize: number
 }
 
 // 获取员工列表（分页）
@@ -61,12 +54,7 @@ export const deleteEmployee = (id: number) => {
 export const importEmployees = async (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  
-  // 不能用 request 实例默认的 Content-Type: application/json，
-  // 这里需要让浏览器自动设置 multipart/form-data + boundary
-  return request.post('/employees/import', formData, {
-    headers: { 'Content-Type': undefined }  // 清除默认头，让浏览器自动设置
-  })
+  return request.post('/employees/import', formData)
 }
 
 // 获取今天生日的员工
