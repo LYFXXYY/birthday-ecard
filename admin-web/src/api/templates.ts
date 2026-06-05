@@ -1,4 +1,5 @@
 import request from './request'
+import type { Blessing } from './blessings'
 
 // 模板信息接口
 export interface Template {
@@ -11,6 +12,7 @@ export interface Template {
   match_interests?: string | null
   html_content: string
   default_blessing_id?: number | null
+  default_blessing?: Blessing | null
   preview_image?: string | null
   is_active?: number
   created_at?: string

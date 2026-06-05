@@ -41,6 +41,11 @@
                   {{ template.match_age_min || '-' }}-{{ template.match_age_max || '-' }}岁
                 </el-tag>
               </div>
+              <div class="template-blessing" v-if="template.default_blessing">
+                <el-tag size="small" type="success" effect="plain">
+                  祝福语：{{ template.default_blessing.content.length > 20 ? template.default_blessing.content.slice(0, 20) + '...' : template.default_blessing.content }}
+                </el-tag>
+              </div>
             </div>
 
             <!-- 操作按钮：预览与编辑（新增/删除已移除） -->
@@ -120,8 +125,7 @@ const openPreviewWindow = (html: string, title = '模板预览') => {
 
 const handleOpenPreviewWindow = async (template: Template) => {
   if (!template.id) {
-    const html = template.html_content || '<p>暂无内容</p>'
-    openPreviewWindow(html, template.name || '模板预览')
+    ElMessage.warning('模板ID不存在，无法预览')
     return
   }
 
@@ -129,9 +133,8 @@ const handleOpenPreviewWindow = async (template: Template) => {
     const html = await previewTemplate(template.id)
     openPreviewWindow(html, template.name || '模板预览')
   } catch (error) {
-    console.error('新窗口预览失败，使用本地回退：', error)
-    const html = template.html_content || '<p>暂无内容</p>'
-    openPreviewWindow(html, template.name || '模板预览')
+    console.error('新窗口预览失败：', error)
+    ElMessage.error('预览失败，请稍后重试')
   }
 }
 
@@ -227,6 +230,10 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.template-blessing {
+  margin-top: 8px;
 }
 
 .template-actions {

@@ -11,7 +11,7 @@ export interface Employee {
   department?: string
   position?: string
   default_template_id?: number | null
-  is_active?: number
+  is_active?: boolean
   created_at?: string
   updated_at?: string
 }

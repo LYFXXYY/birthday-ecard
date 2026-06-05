@@ -314,9 +314,10 @@ const handleSearch = () => {
 
 // 重置
 const handleReset = () => {
-    searchForm.status = undefined
-    searchForm.startDate = undefined
-    searchForm.endDate = undefined
+  searchForm.status = undefined
+  searchForm.startDate = undefined
+  searchForm.endDate = undefined
+  dateRange.value = []
   handleSearch()
 }
 

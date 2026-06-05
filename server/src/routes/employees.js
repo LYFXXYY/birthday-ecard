@@ -251,10 +251,28 @@ router.post('/import', upload.single('file'), async (req, res) => {
       });
     }
 
-    // 批量插入
+    // 检查重复手机号（手动检查，因为 phone 字段无唯一索引）
+    const duplicates = [];
+    for (let i = 0; i < employees.length; i++) {
+      const emp = employees[i];
+      const existing = await Employee.findOne({ where: { phone: emp.phone } });
+      if (existing) {
+        duplicates.push({ row: i + 2, phone: emp.phone, name: emp.name });
+      }
+    }
+
+    if (duplicates.length > 0) {
+      await fs.unlink(req.file.path);
+      return error(res, `发现重复手机号`, 400, {
+        total: employees.length,
+        duplicates
+      });
+    }
+
+    // 批量插入（已手动检查重复，移除 ignoreDuplicates）
     const result = await Employee.bulkCreate(
       employees,
-      { validate: true, ignoreDuplicates: true }
+      { validate: true }
     );
 
     // 删除临时文件

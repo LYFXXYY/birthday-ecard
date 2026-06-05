@@ -97,11 +97,11 @@
         <div class="content">
             <div class="main-title-en">HAPPY<br>BIRTHDAY</div>
             <div class="sub-title-cn">（生日快乐）</div>
-            <div class="date-text" id="coverDate">2035.5.20</div>
+            <div class="date-text" id="coverDate">{{year}}</div>
         </div>
 
         <div class="bottom-wish">
-            <div class="year-big">2035</div>
+            <div class="year-big">{{year}}</div>
             <div class="wish-sub">BEST WISHES FOR YOU</div>
             <div class="poem">年年有今日 · 岁岁有今朝</div>
             <div class="poem" style="font-size: 0.9rem; margin-top: 5px;">祝你一年比一年自由 一岁比一岁通透</div>
@@ -122,9 +122,11 @@
                 <div class="sub-title-cn" style="font-size: 1.2rem;">（诚挚邀请）</div>
             </div>
 
-            <div class="nickname" id="userName">显示姓名</div>
+            <div class="nickname" id="userName">{{name}}</div>
 
-            <div class="card-body" id="blessingText"></div>
+            <!-- editable-start -->
+            <div class="card-body" id="blessingText">{{blessing}}</div>
+            <!-- editable-end -->
 
             <div class="card-footer">
                 <div class="footer-wish">BEST WISHES FOR YOU</div>
@@ -140,9 +142,9 @@
 <script>
     // --- 动态数据配置区 ---
     const inviteData = {
-        coverDate: "2035.5.20",
-        userName: "张三",
-        blessingText: "生辰至，喜乐临！<br>愿你的世界永远充满阳光与鲜花，愿你的未来如星河般璀璨。<br>在这特别的日子里，愿你被岁月温柔以待，<br>所得皆所期，所失亦无碍。<br>生日快乐，不止今日，而是朝朝暮暮！"
+        coverDate: "{{year}}",
+        userName: "{{name}}",
+        blessingText: "{{blessing}}"
     };
 
     document.getElementById('coverDate').textContent = inviteData.coverDate;
