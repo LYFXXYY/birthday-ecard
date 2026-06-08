@@ -92,6 +92,43 @@ const TEMPLATE_MANIFEST = [
     name: '烟花邀请',
     description: '烟花动画风格的生日邀请函（不含占位符）',
     match_gender: 'all'
+  },
+  // ── mb 系列模板 ──
+  {
+    file: 'mb2.html',
+    name: '赛博风格',
+    description: '赛博朋克霓虹风格，带网格和闪烁光点特效',
+    match_gender: 'all'
+  },
+  {
+    file: 'mb3.html',
+    name: '缤纷派对',
+    description: '彩色气球和纸屑特效，2.5D 礼盒装饰背景',
+    match_gender: 'all'
+  },
+  {
+    file: 'mb4.html',
+    name: '经典邀请函',
+    description: '经典典雅邀请函风格，含封面和内页',
+    match_gender: 'all'
+  },
+  {
+    file: 'mb4shotao.html',
+    name: '简约邀请函',
+    description: '简约典雅邀请函，封面精简文字版',
+    match_gender: 'all'
+  },
+  {
+    file: 'mb5lihe.html',
+    name: '礼盒邀请函',
+    description: '典雅礼盒风格邀请函，封面和内页双背景图',
+    match_gender: 'all'
+  },
+  {
+    file: 'mb6yanhua.html',
+    name: '烟花邀请函',
+    description: '烟花背景邀请函，封面和内页双背景图',
+    match_gender: 'all'
   }
 ];
 
@@ -107,7 +144,13 @@ const NAME_MIGRATION = {
   '粉色女性模板':        '粉甜·女性',
   '蓝色男性模板':        '蔚蓝·男性',
   '金色通用模板(详细版)': '金辉·通用',
-  '生日邀请函模板':      '烟花邀请'
+  '生日邀请函模板':      '烟花邀请',
+  'mb2':                 '赛博风格',
+  'mb3':                 '缤纷派对',
+  'mb4':                 '经典邀请函',
+  'mb4shotao':           '简约邀请函',
+  'mb5lihe':             '礼盒邀请函',
+  'mb6yanhua':           '烟花邀请函'
 };
 
 /**
