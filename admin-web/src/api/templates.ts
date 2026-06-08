@@ -48,3 +48,8 @@ export const deleteTemplate = (id: number) => {
 export const previewTemplate = (id: number): Promise<string> => {
   return request.get(`/templates/${id}/preview`)
 }
+
+// 回填：为未匹配祝福语的模板自动分配通用祝福语
+export const backfillBlessings = (): Promise<{ updated: number }> => {
+  return request.post('/templates/backfill-blessings')
+}

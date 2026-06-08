@@ -5,7 +5,10 @@
       <template #header>
         <div class="card-header">
           <span class="title">贺卡模板管理</span>
-          <!-- 添加模板功能已移除 -->
+          <el-button type="primary" @click="handleBackfillBlessings" :loading="backfilling">
+            <el-icon><MagicStick /></el-icon>
+            补配祝福语
+          </el-button>
         </div>
       </template>
 
@@ -48,15 +51,19 @@
               </div>
             </div>
 
-            <!-- 操作按钮：预览与编辑（新增/删除已移除） -->
+            <!-- 操作按钮 -->
             <div class="template-actions">
               <el-button type="info" @click="handleOpenPreviewWindow(template)">
                 <el-icon><Expand /></el-icon>
-                新窗口预览
+                预览
               </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
                 编辑
+              </el-button>
+              <el-button type="danger" @click="handleDelete(template)">
+                <el-icon><Delete /></el-icon>
+                删除
               </el-button>
             </div>
           </el-card>
@@ -69,9 +76,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Expand } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { getTemplateList, previewTemplate } from '@/api/templates'
+import { Picture, Edit, Expand, Delete, MagicStick } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getTemplateList, previewTemplate, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
@@ -79,6 +86,7 @@ const router = useRouter()
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
+const backfilling = ref(false)
 
 // 获取性别文字
 const getGenderText = (gender?: string) => {
@@ -138,7 +146,60 @@ const handleOpenPreviewWindow = async (template: Template) => {
   }
 }
 
-// 删除功能已移除，列表仅支持编辑与预览
+// 删除模板
+const handleDelete = async (template: Template) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除模板「${template.name}」吗？\n删除后关联的员工将解除默认模板绑定。`,
+      '提示',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    if (!template.id) return
+    await deleteTemplate(template.id)
+    ElMessage.success('删除成功')
+    loadTemplates()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败：', error)
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+// 补配祝福语（回填未匹配祝福语的模板）
+const handleBackfillBlessings = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '将为所有未匹配祝福语的模板随机分配一条通用祝福语，确定继续？',
+      '补配祝福语',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    backfilling.value = true
+    const res = await backfillBlessings()
+    if (res.updated === 0) {
+      ElMessage.info('所有模板均已匹配祝福语，无需补配')
+    } else {
+      ElMessage.success(`已为 ${res.updated} 个模板补配祝福语`)
+    }
+    loadTemplates()
+  } catch (err: any) {
+    if (err !== 'cancel') {
+      console.error('补配失败：', err)
+      ElMessage.error('补配失败，请稍后重试')
+    }
+  } finally {
+    backfilling.value = false
+  }
+}
 
 // 页面加载时获取数据
 onMounted(() => {
