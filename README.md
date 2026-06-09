@@ -1,3 +1,3 @@
 # birthday-ecard
 生日祝福电子贺卡
-版本：demo3-完善1
+版本：demo3-完善2

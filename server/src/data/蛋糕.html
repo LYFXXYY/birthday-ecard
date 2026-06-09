@@ -25,10 +25,10 @@
     /* 卡片 */
     .info-card, .bless-card {
         width: 88%; max-width: 420px; position: relative; z-index: 5;
-        background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+        background: rgba(255,255,255,0.92); backdrop-filter: blur(18px);
         border-radius: 24px; padding: 38px 28px; text-align: center;
         box-shadow: 0 12px 40px rgba(0,0,0,0.06);
-        overflow: hidden;
+        overflow-y: auto; max-height: 85vh; -webkit-overflow-scrolling: touch;
     }
     .info-card { border: 1.5px solid rgba(233,30,99,0.12); animation: cardRise 0.9s cubic-bezier(0.16,1,0.3,1) both; }
     .bless-card { border: 1.5px solid rgba(255,152,0,0.12); animation: cardRise 0.9s cubic-bezier(0.16,1,0.3,1) both; }
@@ -43,14 +43,14 @@
     .card-row .icon { font-size: 16px; }
 
     .bless-title { font-size: clamp(18px,4.5vw,24px); font-weight: 600; color: #e65100; letter-spacing: 3px; margin-bottom: 20px; }
-    .bless-text { text-align: left; font-size: clamp(14px,3.2vw,16px); line-height: 2.2; color: #5d4037; text-indent: 2em; white-space: pre-wrap; margin-bottom: 22px; }
+    .bless-text { text-align: left; font-size: clamp(14px,3.2vw,16px); line-height: 1.9; color: #5d4037; text-indent: 2em; white-space: pre-wrap; margin-bottom: 22px; }
     .bless-footer { border-top: 1px dashed rgba(255,152,0,0.2); padding-top: 16px; display: flex; flex-direction: column; gap: 4px; }
     .bless-sign { font-size: 14px; color: #8d6e63; letter-spacing: 2px; }
     .bless-date { font-size: 12px; color: #bcaaa4; letter-spacing: 1px; }
 
     /* 入场动画 */
-    .anim-item { opacity: 0; transform: translateY(24px) scale(0.96); transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1); }
-    .anim-item.visible { opacity: 1; transform: translateY(0) scale(1); }
+    .anim-item { opacity: 0; transform: translateY(28px); transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+    .anim-item.visible { opacity: 1; transform: translateY(0); }
     .anim-d1 { transition-delay: 0.1s; }
     .anim-d2 { transition-delay: 0.2s; }
     .anim-d3 { transition-delay: 0.3s; }
@@ -84,22 +84,9 @@
     @media(max-width:420px){.info-card,.bless-card{padding:30px 20px}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
 
-    .admin-btn {
-        position: fixed; top: 16px; left: 16px; z-index: 200;
-        display: flex; align-items: center; gap: 6px;
-        padding: 7px 14px; border-radius: 20px;
-        background: rgba(255,255,255,0.85);
-        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        border: 1.5px solid rgba(244,143,177,0.25);
-        color: #884466; font-size: 12px; letter-spacing: 1px;
-        text-decoration: none; cursor: pointer; transition: all 0.3s;
-    }
-    .admin-btn:hover { background: rgba(244,143,177,0.15); color: #c2185b; }
-    .admin-btn svg { width: 14px; height: 14px; fill: currentColor; }
 </style>
 </head>
 <body>
-<a class="admin-btn" href="http://localhost:5173" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>返回管理后台</a>
 <canvas id="bgCanvas"></canvas>
 <div class="float-items" id="floatItems"></div>
 <div class="page-dots" id="pageDots"><div class="page-dot active"></div><div class="page-dot"></div><div class="page-dot"></div><div class="page-dot"></div></div>
@@ -151,8 +138,6 @@
             <div class="card-divider anim-item anim-d4"></div>
             <div class="card-details">
                 <div class="card-row anim-item anim-d4"><span class="icon">🎂</span> 生日：{{birthday}}</div>
-                <div class="card-row anim-item anim-d5"><span class="icon">📅</span> 入职年份：{{joinYear}}</div>
-                <div class="card-row anim-item anim-d6"><span class="icon">🏢</span> 部门：{{department}}</div>
             </div>
         </div>
         <div class="arrow" onclick="nextPage()"></div>

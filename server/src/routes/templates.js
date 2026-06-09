@@ -164,6 +164,7 @@ router.get('/:id/preview', async (req, res) => {
 
     // 使用示例数据替换占位符
     let html = template.html_content;
+    const now = new Date();
     const replacements = {
       '{{name}}': '张三',
       '{{department}}': '技术部',
@@ -171,7 +172,10 @@ router.get('/:id/preview', async (req, res) => {
       '{{birthday}}': '6月15日',
       '{{sender}}': '公司工会',
       '{{blessing}}': template.default_blessing?.content || '祝你生日快乐，万事如意！',
-      '{{year}}': new Date().getFullYear().toString()
+      '{{title}}': '张三的生日贺卡',
+      '{{year}}': now.getFullYear().toString(),
+      '{{month}}': (now.getMonth() + 1).toString(),
+      '{{day}}': now.getDate().toString()
     };
 
     for (const [placeholder, value] of Object.entries(replacements)) {

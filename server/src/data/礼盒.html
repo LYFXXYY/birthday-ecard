@@ -12,24 +12,6 @@ body, html {
     background: #1a0a2e; touch-action: none; color: #fff;
 }
 
-/* 返回后台按钮 */
-.admin-btn {
-    position: fixed; top: 16px; left: 16px; z-index: 200;
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 14px; border-radius: 20px;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.75); font-size: 12px; letter-spacing: 1px;
-    text-decoration: none; cursor: pointer;
-    transition: all 0.3s;
-}
-.admin-btn:hover {
-    background: rgba(255,255,255,0.18);
-    color: #fff; border-color: rgba(255,255,255,0.3);
-}
-.admin-btn svg { width: 14px; height: 14px; fill: currentColor; }
-
 /* 翻页容器 */
 .swiper-container {
     width: 100%; height: 100%;
@@ -121,7 +103,7 @@ body, html {
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 24px; padding: 40px 28px; text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.15); max-height: 85vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .card-label {
     font-size: 11px; color: #f48fb1; letter-spacing: 5px;
@@ -157,7 +139,7 @@ body, html {
     letter-spacing: 3px; margin-bottom: 22px;
 }
 .bless-text {
-    text-align: left; font-size: clamp(14px, 3.2vw, 16px); line-height: 2.2;
+    text-align: left; font-size: clamp(14px, 3.2vw, 16px); line-height: 1.9;
     color: rgba(255,255,255,0.85); text-indent: 2em; white-space: pre-wrap;
     margin-bottom: 24px;
 }
@@ -211,8 +193,8 @@ body, html {
 
 /* 入场动画 */
 .anim-item {
-    opacity: 0; transform: translateY(24px);
-    transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    opacity: 0; transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
 }
 .anim-item.visible { opacity: 1; transform: translateY(0); }
 .anim-d1 { transition-delay: 0.1s; }
@@ -272,11 +254,6 @@ body, html {
 </head>
 <body>
 
-<!-- 返回后台按钮 -->
-<a class="admin-btn" href="http://localhost:5173" target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-    返回管理后台
-</a>
 
 <!-- 页面指示点 -->
 <div class="page-dots" id="pageDots">
@@ -314,8 +291,6 @@ body, html {
             <div class="card-divider anim-item anim-d4"></div>
             <div class="card-details">
                 <div class="card-row anim-item anim-d4"><span class="icon">🎂</span> 生日：{{birthday}}</div>
-                <div class="card-row anim-item anim-d5"><span class="icon">📅</span> 入职年份：{{joinYear}}</div>
-                <div class="card-row anim-item anim-d6"><span class="icon">🏢</span> 部门：{{department}}</div>
             </div>
         </div>
         <div class="arrow" onclick="nextPage()"></div>
