@@ -282,6 +282,18 @@ const injectTextIntoTemplate = (text: string, html: string): string => {
   return `${before}\n<${wrapper.tag}${wrapper.attrs}>\n${contentHtml}\n</${wrapper.tag}>\n${after}`
 }
 
+// 模拟模板内 formatBlessingText() 的逗号断句逻辑（v-html 不执行 <script>）
+const formatBlessingForPreview = (text: string): string => {
+  if (!text) return text
+  const parts = text.split(/[，；]/).map(s => s.trim()).filter(Boolean)
+  if (parts.length > 1) {
+    return parts.map(p =>
+      `<span class="comma-line" style="display:block">${p.replace(/[。]+$/, '')}</span>`
+    ).join('')
+  }
+  return text.replace(/[。]+$/, '')
+}
+
 // 刷新预览：优先使用纯文本编辑内容，其次回退到后端 html_content
 const refreshPreview = async () => {
   const hasText = !!formData.text_content
@@ -311,7 +323,7 @@ const refreshPreview = async () => {
       .replace(/\{\{department\}\}/g, '技术部')
       .replace(/\{\{position\}\}/g, '工程师')
       .replace(/\{\{sender\}\}/g, '公司工会')
-      .replace(/\{\{blessing\}\}/g, blessingText)
+      .replace(/\{\{blessing\}\}/g, formatBlessingForPreview(blessingText))
       .replace(/\{\{year\}\}/g, new Date().getFullYear().toString())
 }
 

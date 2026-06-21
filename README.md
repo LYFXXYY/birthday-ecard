@@ -88,4 +88,4 @@ birthday-card-system/
 
 ## 版本
 
-当前版本：v3.2.0（demo3-完善3）
+当前版本：v3.2.0（demo3-完善4）

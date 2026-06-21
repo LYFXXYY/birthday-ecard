@@ -171,6 +171,8 @@ router.get('/:id/preview', async (req, res) => {
       '{{position}}': '工程师',
       '{{birthday}}': '6月15日',
       '{{sender}}': '公司工会',
+      '{{company}}': '公司工会',
+      '{{logo_url}}': '',
       '{{blessing}}': template.default_blessing?.content || '祝你生日快乐，万事如意！',
       '{{title}}': '张三的生日贺卡',
       '{{year}}': now.getFullYear().toString(),
