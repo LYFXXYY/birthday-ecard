@@ -2,7 +2,7 @@
 import cron from 'node-cron';
 import { Op } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import { Employee, SendRecord } from '../models/index.js';
+import { Employee, SendRecord, Template, Blessing } from '../models/index.js';
 import { sendBirthdayCard } from './sendService.js';
 
 /**
@@ -50,10 +50,19 @@ export const processBirthdayEmployees = async () => {
 
   console.log(`[定时任务] 找到 ${birthdayEmployees.length} 位今日生日员工`);
 
-  // 2. 逐个处理（共享发送函数内部已包含重复发送检查）
+  // 2. 预加载所有激活模板（避免循环内 N+1 查询）
+  const preloadedTemplates = await Template.findAll({
+    where: { is_active: true },
+    include: [{
+      model: Blessing,
+      as: 'default_blessing'
+    }]
+  });
+
+  // 3. 逐个处理（共享发送函数内部已包含重复发送检查）
   for (const employee of birthdayEmployees) {
     try {
-      const result = await sendBirthdayCard({ employeeId: employee.id, skipIfSentToday: true });
+      const result = await sendBirthdayCard({ employeeId: employee.id, skipIfSentToday: true, preloadedTemplates });
 
       if (result.error === '今日已发送，跳过') {
         console.log(`[定时任务] 员工 ${employee.name} 今日已发送，跳过`);

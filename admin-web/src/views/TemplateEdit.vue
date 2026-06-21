@@ -98,7 +98,7 @@
                   :value="blessing.id"
                 />
               </el-select>
-              <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{blessing}} 占位符。</div>
+              <div class="hint-text">如果选择，预览和生成卡片时将使用该祝福语替换 {{ '{{blessing}}' }} 占位符。</div>
             </el-form-item>
 
             <el-divider content-position="left">模板内容</el-divider>

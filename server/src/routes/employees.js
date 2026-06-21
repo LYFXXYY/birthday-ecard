@@ -10,6 +10,7 @@ import { parseEmployeeExcel, validateEmployee } from '../utils/excelParser.js';
 import { Op } from 'sequelize';
 import { sendBirthdayCard } from '../services/sendService.js';
 import { autoAssignTemplateToEmployee, pickRandomUniversalTemplate } from '../services/autoMatch.js';
+import { config } from '../config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -209,16 +210,24 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/employees/:id - 删除员工（硬删除）
+// DELETE /api/employees/:id - 删除员工（硬删除，级联清除发送记录和贺卡文件）
 router.delete('/:id', async (req, res) => {
   try {
-    // 删除前先解除模板关联
     const emp = await Employee.findByPk(req.params.id);
     if (!emp) {
       return error(res, '员工不存在', 404);
     }
 
-    // 解除关联的发送记录（外键约束）
+    // 清理磁盘上的贺卡 HTML 文件
+    const records = await SendRecord.findAll({ where: { employee_id: req.params.id }, attributes: ['card_id'] });
+    for (const record of records) {
+      if (record.card_id) {
+        const filePath = path.join(config.cardsDir, `${record.card_id}.html`);
+        await fs.unlink(filePath).catch(() => {});
+      }
+    }
+
+    // 级联删除发送记录
     await SendRecord.destroy({ where: { employee_id: req.params.id } });
 
     await Employee.destroy({ where: { id: req.params.id } });
@@ -243,8 +252,12 @@ router.post('/:id/generate-card', async (req, res) => {
     success(res, {
       cardUrl: result.cardUrl,
       cardId: result.cardId,
+      messageId: result.messageId,
       smsStatus: result.smsStatus,
       smsProvider: result.smsProvider,
+      smsContent: result.smsContent,
+      employeeName: result.employeeName,
+      templateName: result.templateName,
       smsError: result.error
     }, result.success ? '贺卡生成并发送成功' : '贺卡生成成功，短信发送失败');
   } catch (err) {

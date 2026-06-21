@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
-import { Template, Blessing, Employee } from '../models/index.js';
+import { Template, Blessing, Employee, SendRecord } from '../models/index.js';
 import { autoAssignBlessingToTemplate, pickRandomUniversalBlessing } from '../services/autoMatch.js';
 
 const router = Router();
@@ -137,6 +137,13 @@ router.delete('/:id', async (req, res) => {
       // 解除员工关联而不是阻止删除
       await Employee.update({ default_template_id: null }, { where: { default_template_id: req.params.id } });
       console.log(`[模板] 已解除 ${refCount} 位员工的默认模板关联`);
+    }
+
+    // 解除发送记录中的模板引用（保留 card_url 让贺卡仍可访问）
+    const recordCount = await SendRecord.count({ where: { template_id: req.params.id } });
+    if (recordCount > 0) {
+      await SendRecord.update({ template_id: null }, { where: { template_id: req.params.id } });
+      console.log(`[模板] 已解除 ${recordCount} 条发送记录的模板关联`);
     }
 
     const deleted = await Template.destroy({ where: { id: req.params.id } });

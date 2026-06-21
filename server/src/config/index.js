@@ -26,6 +26,10 @@ export const config = {
   uploadsDir: process.env.UPLOADS_DIR || './uploads',
   // 贺卡发送者名称（用于模板 {{sender}} 占位符）
   senderName: process.env.SENDER_NAME || '公司工会',
+  // 公司名称（用于模板 {{company}} 占位符，默认与 senderName 相同）
+  companyName: process.env.COMPANY_NAME || process.env.SENDER_NAME || '公司工会',
+  // 公司 Logo URL（用于模板 {{logo_url}} 占位符）
+  logoUrl: process.env.LOGO_URL || '',
   // 短信发送配置
   sms: {
     provider: smsProvider,

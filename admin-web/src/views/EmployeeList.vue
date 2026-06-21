@@ -231,12 +231,23 @@ const handleDelete = async (row: Employee) => {
 // 发送贺卡
 const handleSend = async (row: Employee) => {
   try {
+    await ElMessageBox.confirm(
+      `确定要为 ${row.name} 生成贺卡并发送短信吗？`,
+      '发送确认',
+      {
+        confirmButtonText: '确定发送',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
     await generateEmployeeCard(row.id!)
     ElMessage.success('发送请求已触发，请在发送记录中查看状态')
     loadData()
-  } catch (error) {
-    console.error('发送失败：', error)
-    ElMessage.error('发送失败，请稍后重试')
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('发送失败：', error)
+      ElMessage.error('发送失败，请稍后重试')
+    }
   }
 }
 

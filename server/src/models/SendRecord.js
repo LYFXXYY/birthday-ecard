@@ -64,6 +64,10 @@ const SendRecord = sequelize.define('SendRecord', {
   retry_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  sms_content: {
+    type: DataTypes.TEXT,
+    allowNull: true
   }
 }, {
   tableName: 'send_records',
