@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
-import { sequelize, Employee, Template, Blessing, SendRecord } from '../models/index.js';
+import { sequelize, Employee, Template, Blessing, SendRecord, Department } from '../models/index.js';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { parseEmployeeExcel, validateEmployee } from '../utils/excelParser.js';
@@ -37,7 +37,7 @@ const upload = multer({
 /**
  * 白名单过滤：防止mass assignment攻击
  */
-const EMPLOYEE_FIELDS = ['name', 'gender', 'birthday', 'phone', 'department', 'position', 'defaultTemplateId', 'default_template_id'];
+const EMPLOYEE_FIELDS = ['name', 'gender', 'birthday', 'phone', 'department', 'position', 'defaultTemplateId', 'default_template_id', 'department_id', 'department_code', 'level'];
 
 const sanitizeEmployeeInput = (obj) => {
   const sanitized = {};
@@ -52,19 +52,43 @@ const sanitizeEmployeeInput = (obj) => {
   return sanitized;
 };
 
+/**
+ * 递归获取部门及其所有子部门的 ID 列表
+ */
+const getDepartmentAndDescendantIds = async (deptId) => {
+  const ids = [deptId];
+  const children = await Department.findAll({
+    where: { parent_id: deptId },
+    attributes: ['id']
+  });
+  for (const child of children) {
+    const childIds = await getDepartmentAndDescendantIds(child.id);
+    ids.push(...childIds);
+  }
+  return ids;
+};
+
 // GET /api/employees - 获取员工列表（分页、搜索）
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, pageSize = 20, keyword, department } = req.query;
+    const { page = 1, pageSize = 20, keyword, department, departmentId, level } = req.query;
     const offset = (page - 1) * pageSize;
 
     const where = { is_active: true };
-    
+
     if (keyword) {
       where[Op.or] = [
         { name: { [Op.like]: `%${keyword}%` } },
         { phone: { [Op.like]: `%${keyword}%` } }
       ];
+    }
+    if (departmentId) {
+      // 包含子部门：查询该部门及所有后代部门的员工
+      const deptIds = await getDepartmentAndDescendantIds(parseInt(departmentId));
+      where.department_id = { [Op.in]: deptIds };
+    }
+    if (level) {
+      where.level = level;
     }
     if (department) {
       where.department = department;
@@ -90,6 +114,9 @@ router.get('/', async (req, res) => {
       birthday: emp.birthday,
       phone: emp.phone,
       department: emp.department,
+      department_id: emp.department_id,
+      department_code: emp.department_code,
+      level: emp.level,
       position: emp.position,
       default_template_id: emp.default_template_id || null,
       defaultTemplateName: emp.default_template?.name || null

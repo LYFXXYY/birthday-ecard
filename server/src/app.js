@@ -17,6 +17,7 @@ import templateRoutes from './routes/templates.js';
 import blessingRoutes from './routes/blessings.js';
 import recordRoutes from './routes/records.js';
 import cardRoutes from './routes/card.js';
+import departmentRoutes from './routes/departments.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
@@ -54,6 +55,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/blessings', blessingRoutes);
 app.use('/api/records', recordRoutes);
+app.use('/api/departments', departmentRoutes);
 
 // 贺卡访问路由（无需认证）
 app.use('/card', cardRoutes);
@@ -67,12 +69,12 @@ const startServer = async () => {
     // 确保工作目录存在
     await ensureDirectories();
 
-    // 不使用alter或force,只同步不存在的表
+    // 迁移：先为已存在的表添加新增列（避免 sync 创建索引时列不存在）
+    await migrateDatabase();
+
+    // 同步表结构：创建尚不存在的表
     await sequelize.sync();
     console.log('[数据库] 连接成功');
-
-    // 迁移：确保已存在的表拥有新增列
-    await migrateDatabase();
 
     await initDefaultAdmin();
     await initDefaultTemplate();

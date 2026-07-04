@@ -24,15 +24,15 @@
           <el-sub-menu index="employees">
             <template #title>
               <el-icon><User /></el-icon>
-              <span>员工管理</span>
+              <span>人员管理</span>
             </template>
             <el-menu-item index="/employees">
               <el-icon><List /></el-icon>
-              <template #title>员工列表</template>
+              <template #title>人员列表</template>
             </el-menu-item>
             <el-menu-item index="/employees/add">
               <el-icon><Plus /></el-icon>
-              <template #title>添加员工</template>
+              <template #title>添加人员</template>
             </el-menu-item>
             <el-menu-item index="/employees/import">
               <el-icon><Upload /></el-icon>

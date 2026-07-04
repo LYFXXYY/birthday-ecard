@@ -13,8 +13,7 @@ generated-cards/*
 # 上传文件
 uploads/*
 !**/uploads/.gitkeep
-birthday-card-13-employee-warm-image/**
-!**/birthday-card-13-employee-warm-image/.gitkeep
+wenjianjia/**
 
 # 日志文件
 *.log
