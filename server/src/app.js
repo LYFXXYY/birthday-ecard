@@ -18,6 +18,8 @@ import blessingRoutes from './routes/blessings.js';
 import recordRoutes from './routes/records.js';
 import cardRoutes from './routes/card.js';
 import departmentRoutes from './routes/departments.js';
+import operationLogRoutes from './routes/operationLogs.js';
+import monitorRoutes from './routes/monitor.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
@@ -56,6 +58,8 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/blessings', blessingRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/operation-logs', operationLogRoutes);
+app.use('/api/monitor', monitorRoutes);
 
 // 贺卡访问路由（无需认证）
 app.use('/card', cardRoutes);

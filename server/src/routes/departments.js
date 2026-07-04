@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { Department, Employee } from '../models/index.js';
+import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
 
 const router = Router();
 
@@ -113,6 +114,7 @@ router.post('/', async (req, res) => {
     }
 
     const department = await Department.create(data);
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Department', model_id: department.id, details: { name: department.name } });
     success(res, department, '添加成功');
   } catch (err) {
     error(res, err.message);
@@ -152,6 +154,7 @@ router.put('/:id', async (req, res) => {
     }
 
     await department.update(data);
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Department', model_id: parseInt(req.params.id) });
     success(res, department, '修改成功');
   } catch (err) {
     error(res, err.message);
@@ -179,6 +182,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     await department.destroy();
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Department', model_id: parseInt(req.params.id), details: { name: department.name } });
     success(res, null, '删除成功');
   } catch (err) {
     error(res, err.message);

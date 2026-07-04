@@ -40,5 +40,11 @@ export const config = {
     maxRetries: parseInt(process.env.SMS_MAX_RETRIES) || 3,
     retryDelay: parseInt(process.env.SMS_RETRY_DELAY) || 1000,
     timeout: parseInt(process.env.SMS_TIMEOUT) || 10000
-  }
+  },
+  // 操作日志保留天数（默认 60 天）
+  logRetentionDays: parseInt(process.env.LOG_RETENTION_DAYS) || 60,
+  // 会话超时时间（分钟，默认 30 分钟）
+  sessionTimeoutMinutes: parseInt(process.env.SESSION_TIMEOUT_MINUTES) || 30,
+  // 最大并发会话数（默认 3）
+  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS) || 3
 };

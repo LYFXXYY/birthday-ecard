@@ -24,6 +24,49 @@ const buildSmsBody = (employeeName, cardUrl) => {
 };
 
 /**
+ * 异步延迟工具函数
+ * @param {number} ms - 延迟毫秒数
+ */
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+/**
+ * 带指数退避的短信发送包装器
+ * 
+ * 当 sendSMS 返回 success=false 时自动重试，最多 3 次：
+ * 第1次重试等待 1s，第2次等待 2s，第3次等待 4s
+ * 
+ * @param {string} phone - 手机号
+ * @param {string} cardUrl - 贺卡链接
+ * @param {string} employeeName - 员工姓名
+ * @returns {Promise<object>} SMS 发送结果
+ */
+const sendSMSWithRetry = async (phone, cardUrl, employeeName) => {
+  const maxRetries = 3;
+  let smsResult;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    smsResult = await sendSMS(phone, cardUrl, employeeName);
+
+    if (smsResult.success) {
+      // 成功时记录在 sendService 层面的实际重试次数
+      smsResult.retryCount = attempt;
+      return smsResult;
+    }
+
+    if (attempt < maxRetries) {
+      const waitTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+      console.warn(`[发送服务重试] 第 ${attempt + 1}/${maxRetries} 次重试，等待 ${waitTime}ms，原因: ${smsResult.error}`);
+      await delay(waitTime);
+    }
+  }
+
+  // 所有重试均失败
+  smsResult.retryCount = maxRetries;
+  console.error(`[发送服务] 短信发送已重试 ${maxRetries} 次仍然失败: ${smsResult.error}`);
+  return smsResult;
+};
+
+/**
  * 为指定员工发送生日贺卡
  * 
  * @param {object} options
@@ -115,8 +158,8 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
         sms_content: smsBody
       }, { transaction: t });
 
-      // 5. 发送短信
-      const smsResult = await sendSMS(employee.phone, cardResult.cardUrl, employeeName);
+      // 5. 发送短信（带重试机制）
+      const smsResult = await sendSMSWithRetry(employee.phone, cardResult.cardUrl, employeeName);
 
       // 6. 更新记录状态
       await newRecord.update({

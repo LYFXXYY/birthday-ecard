@@ -105,6 +105,18 @@ const MIGRATIONS = [
       AND IS_NULLABLE = 'YES'
     `,
     sql: "ALTER TABLE send_records MODIFY COLUMN template_id INT NULL"
+  },
+
+  // ===== admins 表密码安全字段 =====
+  {
+    table: 'admins',
+    column: 'password_changed_at',
+    sql: "ALTER TABLE admins ADD COLUMN password_changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+  },
+  {
+    table: 'admins',
+    column: 'must_change_password',
+    sql: "ALTER TABLE admins ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 1"
   }
 ];
 

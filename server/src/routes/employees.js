@@ -8,6 +8,7 @@ import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { parseEmployeeExcel, validateEmployee } from '../utils/excelParser.js';
 import { Op } from 'sequelize';
+import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
 import { sendBirthdayCard } from '../services/sendService.js';
 import { autoAssignTemplateToEmployee, pickRandomUniversalTemplate } from '../services/autoMatch.js';
 import { config } from '../config/index.js';
@@ -187,6 +188,8 @@ router.post('/', async (req, res) => {
     const employee = await Employee.create(sanitizeEmployeeInput(req.body));
     // 若未手动指定模板，自动从通用模板中随机匹配
     await autoAssignTemplateToEmployee(employee);
+    // 记录操作日志
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Employee', model_id: employee.id, details: { name: employee.name } });
     success(res, employee, '添加成功');
   } catch (err) {
     error(res, err.message);
@@ -231,6 +234,7 @@ router.put('/:id', async (req, res) => {
       return error(res, '员工不存在', 404);
     }
 
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Employee', model_id: parseInt(req.params.id), details: sanitizeEmployeeInput(req.body) });
     success(res, null, '修改成功');
   } catch (err) {
     error(res, err.message);
@@ -258,6 +262,7 @@ router.delete('/:id', async (req, res) => {
     await SendRecord.destroy({ where: { employee_id: req.params.id } });
 
     await Employee.destroy({ where: { id: req.params.id } });
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Employee', model_id: parseInt(req.params.id), details: { name: emp.name } });
     success(res, null, '删除成功');
   } catch (err) {
     error(res, err.message);

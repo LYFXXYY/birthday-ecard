@@ -6,6 +6,7 @@ import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { Template, Blessing, Employee, SendRecord } from '../models/index.js';
 import { autoAssignBlessingToTemplate, pickRandomUniversalBlessing } from '../services/autoMatch.js';
+import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
 
 const router = Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +22,8 @@ router.use(authMiddleware);
 const TEMPLATE_FIELDS = [
   'name', 'description', 'match_gender',
   'match_age_min', 'match_age_max', 'match_interests',
-  'html_content', 'default_blessing_id', 'preview_image', 'is_active'
+  'html_content', 'default_blessing_id', 'preview_image', 'is_active',
+  'employee_level', 'page_count', 'template_type'
 ];
 
 const sanitizeInput = (obj) => {
@@ -78,6 +80,7 @@ router.post('/', async (req, res) => {
     const result = await Template.findByPk(template.id, {
       include: [{ model: Blessing, as: 'default_blessing', attributes: ['id', 'content'] }]
     });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Template', model_id: template.id, details: { name: template.name } });
     success(res, result, '添加成功');
   } catch (err) {
     error(res, err.message);
@@ -122,6 +125,7 @@ router.put('/:id', async (req, res) => {
       return error(res, '模板不存在', 404);
     }
 
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Template', model_id: parseInt(req.params.id), details: sanitizeInput(req.body) });
     success(res, null, '修改成功');
   } catch (err) {
     error(res, err.message);
@@ -146,12 +150,16 @@ router.delete('/:id', async (req, res) => {
       console.log(`[模板] 已解除 ${recordCount} 条发送记录的模板关联`);
     }
 
+    // 查询模板名称用于操作日志
+    const template = await Template.findByPk(req.params.id);
+
     const deleted = await Template.destroy({ where: { id: req.params.id } });
     
     if (!deleted) {
       return error(res, '模板不存在', 404);
     }
 
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Template', model_id: parseInt(req.params.id), details: { name: template?.name } });
     success(res, null, refCount > 0 ? `删除成功，已解除 ${refCount} 位员工的关联` : '删除成功');
   } catch (err) {
     error(res, err.message);
