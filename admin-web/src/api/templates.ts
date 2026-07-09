@@ -6,20 +6,23 @@ export interface Template {
   id?: number
   name: string
   description?: string
+  folder_path?: string | null
+  thumbnail?: string | null
+  employee_level?: 'management' | 'manager' | 'employee' | 'all' | null
+  page_count?: number | null
+  html_content?: string | null
+  default_blessing_id?: number | null
+  default_blessing?: Blessing | null
+  is_active?: number
+  created_at?: string
+  updated_at?: string
+  // Legacy fields (kept for backward compatibility)
   match_gender?: 'male' | 'female' | 'all'
   match_age_min?: number | null
   match_age_max?: number | null
   match_interests?: string | null
-  employee_level?: 'management' | 'manager' | 'employee' | 'all' | null
-  page_count?: number | null
   template_type?: 'official' | 'festive' | 'elegant' | 'modern' | null
-  html_content: string
-  default_blessing_id?: number | null
-  default_blessing?: Blessing | null
   preview_image?: string | null
-  is_active?: number
-  created_at?: string
-  updated_at?: string
 }
 
 // 获取模板列表
@@ -55,4 +58,16 @@ export const previewTemplate = (id: number): Promise<string> => {
 // 回填：为未匹配祝福语的模板自动分配通用祝福语
 export const backfillBlessings = (): Promise<{ updated: number }> => {
   return request.post('/templates/backfill-blessings')
+}
+
+// 获取模板文件夹内的素材列表
+export interface FolderAsset {
+  name: string
+  url: string
+  isImage: boolean
+  size?: number
+}
+
+export const getTemplateFolderAssets = (folderPath: string): Promise<FolderAsset[]> => {
+  return request.get('/templates/folder-assets', { params: { folder_path: folderPath } })
 }

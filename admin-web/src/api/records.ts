@@ -50,9 +50,9 @@ export const getRecordStats = (): Promise<RecordStats> => {
   return request.get('/records/stats')
 }
 
-// 测试发送
+// 测试发送（涉及视频录制和编码，耗时较长）
 export const testSend = (employeeId: number) => {
-  return request.post(`/records/test-send/${employeeId}`)
+  return request.post(`/records/test-send/${employeeId}`, null, { timeout: 300000 })
 }
 
 // 删除发送记录

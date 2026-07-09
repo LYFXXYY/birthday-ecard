@@ -154,10 +154,19 @@ router.delete('/:id', async (req, res) => {
       return error(res, '记录不存在', 404);
     }
 
-    // 清理磁盘上的贺卡 HTML 文件
+    // 清理磁盘上的贺卡文件夹和视频文件
     if (record.card_id) {
-      const filePath = path.join(config.cardsDir, `${record.card_id}.html`);
-      await fs.unlink(filePath).catch(() => {});
+      // 清理贺卡文件夹
+      const cardDir = path.join(config.cardsDir, record.card_id);
+      await fs.rm(cardDir, { recursive: true, force: true }).catch(() => {});
+      // 清理视频文件（mp4 + 兼容旧版 webm）
+      const videoPath = path.join(config.videosDir, `${record.card_id}.mp4`);
+      await fs.unlink(videoPath).catch(() => {});
+      const legacyVideoPath = path.join(config.videosDir, `${record.card_id}.webm`);
+      await fs.unlink(legacyVideoPath).catch(() => {});
+      // 兼容旧版单文件 HTML
+      const legacyPath = path.join(config.cardsDir, `${record.card_id}.html`);
+      await fs.unlink(legacyPath).catch(() => {});
     }
 
     await record.destroy();

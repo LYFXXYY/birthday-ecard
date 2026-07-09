@@ -46,7 +46,7 @@ export const startBirthdayScheduler = async () => {
       const now = new Date();
       const hoursSinceBeat = (now - beatTime) / (1000 * 60 * 60);
 
-      if (hoursSinceBeat > 2) {
+      if (hoursSinceBeat > 25) {
         console.warn(
           `[监控警告] 发送服务心跳已超过 ${hoursSinceBeat.toFixed(1)} 小时未更新！` +
           `最后心跳时间: ${lastBeat}`

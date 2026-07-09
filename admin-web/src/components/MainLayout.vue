@@ -4,7 +4,6 @@
     <aside :class="['sidebar', { collapsed: isCollapsed }]">
       <div class="sidebar-header">
         <h1 v-show="!isCollapsed">生日贺卡管理</h1>
-        <h1 v-show="isCollapsed"></h1>
       </div>
 
       <nav class="sidebar-menu">

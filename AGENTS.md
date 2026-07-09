@@ -65,6 +65,10 @@ npm run build        # 生产构建
 - 贺卡模板使用 `<!-- editable-start -->` / `<!-- editable-end -->` 标记定义可编辑区域
 - 占位符完整清单：
   - `{{name}}`、`{{department}}`、`{{position}}`、`{{birthday}}`、`{{sender}}`、`{{blessing}}` — 基础字段
+  - `{{message}}` — 祝福语内容（与 `{{blessing}}` 相同，兼容文件夹模板）
+  - `{{year_note}}` — 年度回顾语，固定文案
+  - `{{title}}` — 页面标题，自动生成为"{name}的生日贺卡"
+  - `{{music_url}}` — 背景音乐路径，固定为 `../music/music.mp3`
   - `{{company}}`（→ `COMPANY_NAME` 环境变量）、`{{logo_url}}`（→ `LOGO_URL` 环境变量）— 企业信息
   - `{{year}}`、`{{month}}`、`{{day}}` — 日期字段
   - `{{deptBlock}}` — 条件占位符，由后端根据部门/职位是否为空动态生成

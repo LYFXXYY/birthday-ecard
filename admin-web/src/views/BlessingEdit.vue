@@ -168,12 +168,6 @@ onMounted(() => {
   padding: 0;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .title {
   font-size: 18px;
   font-weight: bold;

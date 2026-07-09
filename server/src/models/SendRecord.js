@@ -25,13 +25,25 @@ const SendRecord = sequelize.define('SendRecord', {
   },
   card_url: {
     type: DataTypes.STRING(500),
-    allowNull: false
+    allowNull: true
   },
   card_id: {
     type: DataTypes.STRING(100)
   },
+  card_dir: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  video_path: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  video_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
   send_status: {
-    type: DataTypes.ENUM('pending', 'success', 'failed'),
+    type: DataTypes.ENUM('pending', 'recording', 'recorded', 'sending', 'success', 'failed'),
     defaultValue: 'pending'
   },
   send_time: {

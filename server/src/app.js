@@ -31,7 +31,7 @@ const __dirname = path.dirname(__filename);
 
 // 确保必要的目录存在
 async function ensureDirectories() {
-  const dirs = [config.cardsDir, config.uploadsDir];
+  const dirs = [config.cardsDir, config.videosDir, config.uploadsDir];
   for (const dir of dirs) {
     try {
       await fs.mkdir(dir, { recursive: true });
@@ -64,8 +64,11 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/operation-logs', operationLogRoutes);
 app.use('/api/monitor', monitorRoutes);
 
-// 贺卡访问路由（无需认证）
+// 贺卡访问路由（公开）
 app.use('/card', cardRoutes);
+
+// 视频文件静态服务（公开，用于贺卡视频访问）
+app.use('/video', express.static(path.resolve(config.videosDir)));
 
 // 全局错误处理
 app.use(errorHandler);

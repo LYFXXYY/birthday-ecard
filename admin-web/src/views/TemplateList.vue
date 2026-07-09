@@ -25,7 +25,8 @@
           >
             <!-- 模板预览图 -->
             <div class="template-preview">
-              <div class="preview-placeholder">
+              <img v-if="template.thumbnail" :src="getThumbnailUrl(template)" class="template-thumbnail" />
+              <div v-else class="preview-placeholder">
                 <el-icon :size="48"><Picture /></el-icon>
                 <div class="preview-text">模板预览</div>
               </div>
@@ -37,12 +38,8 @@
               <p class="template-desc">{{ template.description || '暂无描述' }}</p>
               
               <div class="template-meta">
-                <el-tag size="small" type="info">
-                  {{ getGenderText(template.match_gender) }}
-                </el-tag>
-                <el-tag v-if="template.match_age_min || template.match_age_max" size="small">
-                  {{ template.match_age_min || '-' }}-{{ template.match_age_max || '-' }}岁
-                </el-tag>
+                <el-tag size="small">{{ template.page_count || 4 }}页</el-tag>
+                <el-tag size="small" type="success">{{ getLevelText(template.employee_level) }}</el-tag>
               </div>
               <div class="template-blessing" v-if="template.default_blessing">
                 <el-tag size="small" type="success" effect="plain">
@@ -53,10 +50,6 @@
 
             <!-- 操作按钮 -->
             <div class="template-actions">
-              <el-button type="info" @click="handleOpenPreviewWindow(template)">
-                <el-icon><Expand /></el-icon>
-                预览
-              </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
                 编辑
@@ -76,9 +69,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Expand, Delete, MagicStick } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete, MagicStick } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTemplateList, previewTemplate, deleteTemplate, backfillBlessings } from '@/api/templates'
+import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
@@ -88,14 +81,21 @@ const templates = ref<Template[]>([])
 const loading = ref(false)
 const backfilling = ref(false)
 
-// 获取性别文字
-const getGenderText = (gender?: string) => {
-  const genderMap: Record<string, string> = {
-    male: '男性',
-    female: '女性',
-    all: '不限'
+// 获取员工级别文字
+const getLevelText = (level?: string | null) => {
+  const levelMap: Record<string, string> = {
+    management: '管理层',
+    manager: '三级经理',
+    employee: '普通员工',
+    all: '通用'
   }
-  return genderMap[gender || 'all'] || '不限'
+  return levelMap[level || 'all'] || '通用'
+}
+
+// 获取缩略图URL
+const getThumbnailUrl = (template: Template) => {
+  if (!template.folder_path || !template.thumbnail) return ''
+  return `/api/templates/${template.id}/thumbnail`
 }
 
 // 加载模板列表
@@ -115,35 +115,6 @@ const loadTemplates = async () => {
 // 编辑模板
 const handleEdit = (template: Template) => {
   router.push(`/templates/${template.id}/edit`)
-}
-
-// 预览模板
-const openPreviewWindow = (html: string, title = '模板预览') => {
-  const previewWindow = window.open('', '_blank')
-  if (!previewWindow) {
-    ElMessage.error('弹窗被拦截，请允许弹窗')
-    return
-  }
-
-  previewWindow.document.open()
-  previewWindow.document.write(html)
-  previewWindow.document.close()
-  previewWindow.document.title = title
-}
-
-const handleOpenPreviewWindow = async (template: Template) => {
-  if (!template.id) {
-    ElMessage.warning('模板ID不存在，无法预览')
-    return
-  }
-
-  try {
-    const html = await previewTemplate(template.id)
-    openPreviewWindow(html, template.name || '模板预览')
-  } catch (error) {
-    console.error('新窗口预览失败：', error)
-    ElMessage.error('预览失败，请稍后重试')
-  }
 }
 
 // 删除模板
@@ -212,12 +183,6 @@ onMounted(() => {
   padding: 0;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .title {
   font-size: 18px;
   font-weight: bold;
@@ -263,6 +228,12 @@ onMounted(() => {
   margin-top: 8px;
   font-size: 14px;
   opacity: 0.9;
+}
+
+.template-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .template-info {

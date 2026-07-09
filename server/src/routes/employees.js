@@ -43,7 +43,7 @@ const EMPLOYEE_FIELDS = ['name', 'gender', 'birthday', 'phone', 'department', 'p
 const sanitizeEmployeeInput = (obj) => {
   const sanitized = {};
   for (const key of EMPLOYEE_FIELDS) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       // 统一转换为 snake_case 数据库字段名
       let dbKey = key;
       if (key === 'defaultTemplateId') dbKey = 'default_template_id';
@@ -249,12 +249,19 @@ router.delete('/:id', async (req, res) => {
       return error(res, '员工不存在', 404);
     }
 
-    // 清理磁盘上的贺卡 HTML 文件
+    // 清理磁盘上的贺卡文件夹和视频文件
     const records = await SendRecord.findAll({ where: { employee_id: req.params.id }, attributes: ['card_id'] });
     for (const record of records) {
       if (record.card_id) {
-        const filePath = path.join(config.cardsDir, `${record.card_id}.html`);
-        await fs.unlink(filePath).catch(() => {});
+        const cardDir = path.join(config.cardsDir, record.card_id);
+        await fs.rm(cardDir, { recursive: true, force: true }).catch(() => {});
+        const videoPath = path.join(config.videosDir, `${record.card_id}.mp4`);
+        await fs.unlink(videoPath).catch(() => {});
+        // 兼容旧版 .webm 文件
+        const legacyVideoPath = path.join(config.videosDir, `${record.card_id}.webm`);
+        await fs.unlink(legacyVideoPath).catch(() => {});
+        const legacyPath = path.join(config.cardsDir, `${record.card_id}.html`);
+        await fs.unlink(legacyPath).catch(() => {});
       }
     }
 

@@ -117,6 +117,55 @@ const MIGRATIONS = [
     table: 'admins',
     column: 'must_change_password',
     sql: "ALTER TABLE admins ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 1"
+  },
+
+  // ===== 阶段八：视频录制相关字段 =====
+  {
+    table: 'send_records',
+    column: 'card_dir',
+    sql: "ALTER TABLE send_records ADD COLUMN card_dir VARCHAR(500) NULL"
+  },
+  {
+    table: 'send_records',
+    column: 'video_path',
+    sql: "ALTER TABLE send_records ADD COLUMN video_path VARCHAR(500) NULL"
+  },
+  {
+    table: 'send_records',
+    column: 'video_url',
+    sql: "ALTER TABLE send_records ADD COLUMN video_url VARCHAR(500) NULL"
+  },
+  // send_status ENUM 扩展（需要重建列）
+  {
+    table: 'send_records',
+    column: 'send_status_v2',
+    checkSql: `
+      SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'send_records' AND COLUMN_NAME = 'send_status'
+      AND COLUMN_TYPE LIKE '%recording%'
+    `,
+    sql: "ALTER TABLE send_records MODIFY COLUMN send_status ENUM('pending','recording','recorded','sending','success','failed') DEFAULT 'pending'"
+  },
+  {
+    table: 'templates',
+    column: 'folder_path',
+    sql: "ALTER TABLE templates ADD COLUMN folder_path VARCHAR(255) NULL"
+  },
+  {
+    table: 'templates',
+    column: 'thumbnail',
+    sql: "ALTER TABLE templates ADD COLUMN thumbnail VARCHAR(255) NULL"
+  },
+  // templates.html_content 从 NOT NULL 改为 NULL（文件夹模板不存 HTML）
+  {
+    table: 'templates',
+    column: 'html_content_nullable',
+    checkSql: `
+      SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'templates' AND COLUMN_NAME = 'html_content'
+      AND IS_NULLABLE = 'YES'
+    `,
+    sql: "ALTER TABLE templates MODIFY COLUMN html_content MEDIUMTEXT NULL"
   }
 ];
 

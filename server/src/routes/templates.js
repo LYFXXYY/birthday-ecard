@@ -8,11 +8,83 @@ import { Template, Blessing, Employee, SendRecord } from '../models/index.js';
 import { autoAssignBlessingToTemplate, pickRandomUniversalBlessing } from '../services/autoMatch.js';
 import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
 
-const router = Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const DATA_DIR = path.join(__dirname, '..', 'data');
 
-// 所有模板路由需要认证
+// ========== 公开路由：静态文件服务（不需要认证） ==========
+// 这些路由被 <img src="..."> 直接访问，浏览器不会携带 Authorization 头
+const publicRouter = Router();
+
+// GET /api/templates/:id/thumbnail - 通过模板 ID 获取缩略图
+publicRouter.get('/:id/thumbnail', async (req, res) => {
+  try {
+    const template = await Template.findByPk(req.params.id);
+    if (!template || !template.folder_path || !template.thumbnail) {
+      return res.status(404).send('Not found');
+    }
+
+    const fullPath = path.join(DATA_DIR, template.folder_path, template.thumbnail);
+    const resolvedFull = path.resolve(fullPath);
+    const resolvedData = path.resolve(DATA_DIR);
+
+    if (!resolvedFull.startsWith(resolvedData)) {
+      return res.status(403).send('Forbidden');
+    }
+
+    await fs.access(resolvedFull);
+    res.sendFile(resolvedFull);
+  } catch (err) {
+    res.status(404).send('Not found');
+  }
+});
+
+// GET /api/templates/thumbnail/:folderPath/* - 提供模板缩略图文件
+publicRouter.use('/thumbnail/:folderPath', async (req, res, next) => {
+  try {
+    const folderPath = req.params.folderPath;
+    const remainingPath = req.url.substring(1);
+    const fullPath = remainingPath
+      ? path.join(DATA_DIR, folderPath, remainingPath)
+      : path.join(DATA_DIR, folderPath);
+    const resolvedFull = path.resolve(fullPath);
+    const resolvedData = path.resolve(DATA_DIR);
+
+    if (!resolvedFull.startsWith(resolvedData)) {
+      return res.status(403).send('Forbidden');
+    }
+
+    await fs.access(resolvedFull);
+    res.sendFile(resolvedFull);
+  } catch (err) {
+    res.status(404).send('Not found');
+  }
+});
+
+// GET /api/templates/asset/:folderPath/* - 提供模板文件夹内的静态资源
+publicRouter.use('/asset/:folderPath', async (req, res, next) => {
+  try {
+    const folderPath = req.params.folderPath;
+    const remainingPath = req.url.substring(1);
+    const fullPath = remainingPath
+      ? path.join(DATA_DIR, folderPath, remainingPath)
+      : path.join(DATA_DIR, folderPath);
+    const resolvedFull = path.resolve(fullPath);
+    const resolvedData = path.resolve(DATA_DIR);
+
+    if (!resolvedFull.startsWith(resolvedData)) {
+      return res.status(403).send('Forbidden');
+    }
+
+    await fs.access(resolvedFull);
+    res.sendFile(resolvedFull);
+  } catch (err) {
+    res.status(404).send('Not found');
+  }
+});
+
+// ========== 认证路由：需要登录才能访问 ==========
+const router = Router();
 router.use(authMiddleware);
 
 /**
@@ -20,10 +92,8 @@ router.use(authMiddleware);
  * 只允许更新模型的合法字段
  */
 const TEMPLATE_FIELDS = [
-  'name', 'description', 'match_gender',
-  'match_age_min', 'match_age_max', 'match_interests',
-  'html_content', 'default_blessing_id', 'preview_image', 'is_active',
-  'employee_level', 'page_count', 'template_type'
+  'name', 'description', 'folder_path', 'thumbnail', 'is_active',
+  'default_blessing_id', 'employee_level', 'page_count'
 ];
 
 const sanitizeInput = (obj) => {
@@ -36,11 +106,13 @@ const sanitizeInput = (obj) => {
   return sanitized;
 };
 
+// ========== 静态路径路由（必须在 /:id 之前定义） ==========
+
 // GET /api/templates - 获取模板列表（不返回html_content）
 router.get('/', async (req, res) => {
   try {
     const templates = await Template.findAll({
-      attributes: ['id', 'name', 'description', 'match_gender', 'match_age_min', 'match_age_max', 'default_blessing_id', 'is_active', 'created_at'],
+      attributes: ['id', 'name', 'description', 'folder_path', 'thumbnail', 'page_count', 'employee_level', 'default_blessing_id', 'is_active', 'created_at'],
       include: [{
         model: Blessing,
         as: 'default_blessing',
@@ -53,41 +125,56 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/templates/:id - 获取模板详情（包含html_content）
-router.get('/:id', async (req, res) => {
+// GET /api/templates/folder-assets - 获取模板文件夹内的素材列表
+router.get('/folder-assets', async (req, res) => {
   try {
-        const template = await Template.findByPk(req.params.id, {
-      include: [{ model: Blessing, as: 'default_blessing' }]
-    });
-    
-    if (!template) {
-      return error(res, '模板不存在', 404);
+    const { folder_path } = req.query;
+    if (!folder_path) {
+      return error(res, '缺少 folder_path 参数', 400);
     }
 
-    success(res, template);
+    const templateDir = path.join(DATA_DIR, folder_path);
+    const resolvedDir = path.resolve(templateDir);
+    const resolvedData = path.resolve(DATA_DIR);
+
+    if (!resolvedDir.startsWith(resolvedData)) {
+      return error(res, '无效的文件夹路径', 403);
+    }
+
+    const entries = await fs.readdir(resolvedDir, { withFileTypes: true });
+    const assets = [];
+
+    // 递归收集所有文件（含子目录）
+    const collectFiles = async (dir, relativeBase) => {
+      const items = await fs.readdir(dir, { withFileTypes: true });
+      for (const item of items) {
+        const relativePath = relativeBase ? `${relativeBase}/${item.name}` : item.name;
+        if (item.isDirectory()) {
+          await collectFiles(path.join(dir, item.name), relativePath);
+        } else {
+          const ext = path.extname(item.name).toLowerCase();
+          const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext);
+          assets.push({
+            name: item.name,
+            relativePath,
+            url: `/api/templates/asset/${folder_path}/${relativePath}`,
+            isImage,
+            size: (await fs.stat(path.join(dir, item.name))).size
+          });
+        }
+      }
+    };
+
+    await collectFiles(resolvedDir, '');
+
+    success(res, assets);
   } catch (err) {
-    error(res, err.message);
+    console.error('[folder-assets] Error:', err);
+    error(res, err.message, 500);
   }
 });
 
-// POST /api/templates - 新增模板（自动匹配通用祝福语）
-router.post('/', async (req, res) => {
-  try {
-    const template = await Template.create(sanitizeInput(req.body));
-    // 若未手动指定祝福语，自动从通用祝福语中随机匹配
-    await autoAssignBlessingToTemplate(template);
-    // 重新查询以返回祝福语关联
-    const result = await Template.findByPk(template.id, {
-      include: [{ model: Blessing, as: 'default_blessing', attributes: ['id', 'content'] }]
-    });
-    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Template', model_id: template.id, details: { name: template.name } });
-    success(res, result, '添加成功');
-  } catch (err) {
-    error(res, err.message);
-  }
-});
-
-// POST /api/templates/backfill-blessings - 回填：为所有未匹配祝福语的模板随机分配通用祝福语
+// POST /api/templates/backfill-blessings - 回填祝福语
 router.post('/backfill-blessings', async (req, res) => {
   try {
     const unmatched = await Template.findAll({
@@ -113,6 +200,40 @@ router.post('/backfill-blessings', async (req, res) => {
   }
 });
 
+// POST /api/templates - 新增模板
+router.post('/', async (req, res) => {
+  try {
+    const template = await Template.create(sanitizeInput(req.body));
+    await autoAssignBlessingToTemplate(template);
+    const result = await Template.findByPk(template.id, {
+      include: [{ model: Blessing, as: 'default_blessing', attributes: ['id', 'content'] }]
+    });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Template', model_id: template.id, details: { name: template.name } });
+    success(res, result, '添加成功');
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
+// ========== 动态参数路由 /:id ==========
+
+// GET /api/templates/:id - 获取模板详情
+router.get('/:id', async (req, res) => {
+  try {
+    const template = await Template.findByPk(req.params.id, {
+      include: [{ model: Blessing, as: 'default_blessing' }]
+    });
+
+    if (!template) {
+      return error(res, '模板不存在', 404);
+    }
+
+    success(res, template);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
 // PUT /api/templates/:id - 修改模板
 router.put('/:id', async (req, res) => {
   try {
@@ -120,7 +241,7 @@ router.put('/:id', async (req, res) => {
       sanitizeInput(req.body),
       { where: { id: req.params.id } }
     );
-    
+
     if (!updated) {
       return error(res, '模板不存在', 404);
     }
@@ -135,26 +256,21 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/templates/:id - 删除模板
 router.delete('/:id', async (req, res) => {
   try {
-    // 检查是否有员工引用此模板
     const refCount = await Employee.count({ where: { default_template_id: req.params.id } });
     if (refCount > 0) {
-      // 解除员工关联而不是阻止删除
       await Employee.update({ default_template_id: null }, { where: { default_template_id: req.params.id } });
       console.log(`[模板] 已解除 ${refCount} 位员工的默认模板关联`);
     }
 
-    // 解除发送记录中的模板引用（保留 card_url 让贺卡仍可访问）
     const recordCount = await SendRecord.count({ where: { template_id: req.params.id } });
     if (recordCount > 0) {
       await SendRecord.update({ template_id: null }, { where: { template_id: req.params.id } });
       console.log(`[模板] 已解除 ${recordCount} 条发送记录的模板关联`);
     }
 
-    // 查询模板名称用于操作日志
     const template = await Template.findByPk(req.params.id);
-
     const deleted = await Template.destroy({ where: { id: req.params.id } });
-    
+
     if (!deleted) {
       return error(res, '模板不存在', 404);
     }
@@ -172,13 +288,11 @@ router.get('/:id/preview', async (req, res) => {
     const template = await Template.findByPk(req.params.id, {
       include: [{ model: Blessing, as: 'default_blessing' }]
     });
-    
+
     if (!template) {
       return error(res, '模板不存在', 404);
     }
 
-    // 使用示例数据替换占位符
-    let html = template.html_content;
     const now = new Date();
     const replacements = {
       '{{name}}': '张三',
@@ -192,9 +306,33 @@ router.get('/:id/preview', async (req, res) => {
       '{{title}}': '张三的生日贺卡',
       '{{year}}': now.getFullYear().toString(),
       '{{month}}': (now.getMonth() + 1).toString(),
-      '{{day}}': now.getDate().toString()
+      '{{day}}': now.getDate().toString(),
+      '{{music_url}}': '../music/music.mp3',
+      '{{message}}': '恭祝您生日快乐，愿您事业蒸蒸日上，生活幸福美满！',
+      '{{year_note}}': '岁序更新，美好常在'
     };
 
+    if (template.folder_path) {
+      const templateDir = path.join(DATA_DIR, template.folder_path);
+      const indexPath = path.join(templateDir, 'index.html');
+
+      try {
+        let html = await fs.readFile(indexPath, 'utf-8');
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          html = html.replaceAll(placeholder, value);
+        }
+        res.type('text/html').send(html);
+      } catch (err) {
+        return error(res, '模板文件夹内 index.html 读取失败: ' + err.message, 500);
+      }
+      return;
+    }
+
+    if (!template.html_content) {
+      return error(res, '模板无可预览内容', 400);
+    }
+
+    let html = template.html_content;
     for (const [placeholder, value] of Object.entries(replacements)) {
       html = html.replaceAll(placeholder, value);
     }
@@ -205,4 +343,9 @@ router.get('/:id/preview', async (req, res) => {
   }
 });
 
-export default router;
+// ========== 合并路由：公开路由在前（优先匹配），认证路由在后 ==========
+const combinedRouter = Router();
+combinedRouter.use(publicRouter);
+combinedRouter.use(router);
+
+export default combinedRouter;

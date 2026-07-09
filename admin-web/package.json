@@ -15,7 +15,6 @@
     "echarts": "^6.1.0",
     "element-plus": "^2.14.1",
     "pinia": "^3.0.4",
-    "swiper": "^14.0.1",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"
   },

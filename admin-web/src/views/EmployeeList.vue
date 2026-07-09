@@ -133,9 +133,8 @@
               </template>
             </el-table-column>
             <el-table-column prop="position" label="职位" min-width="120" />
-            <el-table-column label="操作" width="220" fixed="right">
+            <el-table-column label="操作" width="150" fixed="right">
               <template #default="{ row }">
-                <el-button type="success" size="small" @click="handleSend(row)">发送</el-button>
                 <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
                 <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
               </template>
@@ -198,7 +197,7 @@ import { ref, reactive, watch, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, Upload, Search, Refresh, MagicStick } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getEmployeeList, getTodayBirthdayEmployees, deleteEmployee, generateEmployeeCard, backfillTemplates } from '@/api/employees'
+import { getEmployeeList, getTodayBirthdayEmployees, deleteEmployee, backfillTemplates } from '@/api/employees'
 import type { Employee, EmployeeQueryParams } from '@/api/employees'
 import {
   getDepartmentTree,
@@ -491,21 +490,6 @@ const handleDelete = async (row: Employee) => {
   }
 }
 
-const handleSend = async (row: Employee) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要为 ${row.name} 生成贺卡并发送短信吗？`,
-      '发送确认',
-      { confirmButtonText: '确定发送', cancelButtonText: '取消', type: 'info' }
-    )
-    await generateEmployeeCard(row.id!)
-    ElMessage.success('发送请求已触发，请在发送记录中查看状态')
-    loadData()
-  } catch (error: any) {
-    if (error !== 'cancel') ElMessage.error('发送失败，请稍后重试')
-  }
-}
-
 const handleBackfillTemplates = async () => {
   try {
     await ElMessageBox.confirm(
@@ -540,21 +524,10 @@ onMounted(async () => {
   padding: 0;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .title {
   font-size: 18px;
   font-weight: bold;
   color: #303133;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
 }
 
 .main-content {

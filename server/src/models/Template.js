@@ -40,7 +40,15 @@ const Template = sequelize.define('Template', {
   },
   html_content: {
     type: DataTypes.TEXT('medium'),
-    allowNull: false
+    allowNull: true
+  },
+  folder_path: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  thumbnail: {
+    type: DataTypes.STRING(255),
+    allowNull: true
   },
   default_blessing_id: {
     type: DataTypes.INTEGER,

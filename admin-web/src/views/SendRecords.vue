@@ -45,6 +45,9 @@
             <el-option label="成功" value="success" />
             <el-option label="失败" value="failed" />
             <el-option label="待发送" value="pending" />
+            <el-option label="录制中" value="recording" />
+            <el-option label="已录制" value="recorded" />
+            <el-option label="发送中" value="sending" />
           </el-select>
         </el-form-item>
         
@@ -139,7 +142,8 @@
               type="primary" 
               size="small" 
               @click="handleTestSend(row.employee_id)"
-              :disabled="row.send_status === 'success'"
+              :loading="sendingId === row.employee_id"
+              :disabled="sendingId !== null || row.send_status === 'success'"
             >
               重发
             </el-button>
@@ -231,6 +235,7 @@ const dateRange = ref<string[]>([])
 // 表格数据
 const tableData = ref<SendRecord[]>([])
 const loading = ref(false)
+const sendingId = ref<number | null>(null)
 
 // 分页
 const pagination = reactive({
@@ -253,7 +258,10 @@ const getStatusType = (status: string) => {
   const typeMap: Record<string, any> = {
     success: 'success',
     failed: 'danger',
-    pending: 'warning'
+    pending: 'warning',
+    recording: 'info',
+    recorded: '',
+    sending: ''
   }
   return typeMap[status] || 'info'
 }
@@ -263,7 +271,10 @@ const getStatusText = (status: string) => {
   const textMap: Record<string, string> = {
     success: '成功',
     failed: '失败',
-    pending: '待发送'
+    pending: '待发送',
+    recording: '录制中',
+    recorded: '已录制',
+    sending: '发送中'
   }
   return textMap[status] || status
 }
@@ -342,13 +353,47 @@ const handlePageChange = (page: number) => {
 
 // 测试发送
 const handleTestSend = async (employeeId: number) => {
+  sendingId.value = employeeId
+
+  // 阶段提示文案，每 8 秒轮换一次
+  const stageMessages = [
+    '正在查找员工信息…',
+    '正在匹配贺卡模板…',
+    '正在生成贺卡并录制视频（此步骤约需 2-3 分钟，请耐心等待）…',
+    '视频录制中，请勿关闭页面…',
+    '正在编码视频文件…',
+    '正在创建发送记录…',
+    '正在发送短信…'
+  ]
+  let stageIndex = 0
+  const hideLoading = ElMessage({
+    message: stageMessages[0],
+    type: 'info',
+    duration: 0
+  })
+  const stageTimer = setInterval(() => {
+    stageIndex = (stageIndex + 1) % stageMessages.length
+    hideLoading.close()
+    ElMessage({
+      message: stageMessages[stageIndex],
+      type: 'info',
+      duration: 0
+    })
+  }, 8000)
+
   try {
     await testSend(employeeId)
+    clearInterval(stageTimer)
+    hideLoading.close()
     ElMessage.success('发送成功')
     // 刷新列表和统计
     await Promise.all([loadRecords(), loadStats()])
   } catch (error) {
-    ElMessage.error('发送失败')
+    clearInterval(stageTimer)
+    hideLoading.close()
+    ElMessage.error('发送失败，请查看后台日志确认状态')
+  } finally {
+    sendingId.value = null
   }
 }
 
@@ -416,12 +461,6 @@ onMounted(() => {
 <style scoped>
 .send-records-container {
   padding: 0;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .title {

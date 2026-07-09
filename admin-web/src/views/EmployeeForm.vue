@@ -250,12 +250,6 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .title {
   font-size: 18px;
   font-weight: bold;

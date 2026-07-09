@@ -23,11 +23,6 @@ export const login = (data: LoginParams): Promise<LoginResponse> => {
   return request.post('/auth/login', data)
 }
 
-// 获取当前管理员信息
-export const getProfile = () => {
-  return request.get('/auth/profile')
-}
-
 // 修改密码
 export interface ChangePasswordParams {
   oldPassword: string
@@ -36,11 +31,6 @@ export interface ChangePasswordParams {
 
 export const changePassword = (data: ChangePasswordParams) => {
   return request.post('/auth/change-password', data)
-}
-
-// 验证当前密码
-export const verifyPassword = (password: string): Promise<{ valid: boolean }> => {
-  return request.post('/auth/verify-password', { password })
 }
 
 // 退出登录

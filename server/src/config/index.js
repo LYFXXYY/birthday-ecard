@@ -23,7 +23,8 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
   cardsDir: process.env.CARDS_DIR || './generated-cards',
-  uploadsDir: process.env.UPLOADS_DIR || './uploads',
+  videosDir: process.env.VIDEOS_DIR || './generated-videos',
+  uploadsDir: process.env.UPLOADS_DIR || '../uploads',
   // 贺卡发送者名称（用于模板 {{sender}} 占位符）
   senderName: process.env.SENDER_NAME || '信阳移动公司工会',
   // 公司名称（用于模板 {{company}} 占位符，默认与 senderName 相同）

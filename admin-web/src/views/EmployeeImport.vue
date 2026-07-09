@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Back, Download, UploadFilled, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -170,24 +170,6 @@ const handleFileChange = (file: UploadFile) => {
 // 文件超出限制
 const handleExceed = () => {
   ElMessage.warning('只能上传一个文件')
-}
-
-// 上传前验证
-const beforeUpload = (file: File) => {
-  const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-                  file.type === 'application/vnd.ms-excel' ||
-                  file.type === 'text/csv'
-  const isLt10M = file.size / 1024 / 1024 < 10
-
-  if (!isExcel) {
-    ElMessage.error('只能上传 Excel 或 CSV 文件!')
-    return false
-  }
-  if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB!')
-    return false
-  }
-  return true
 }
 
 // 清除文件
@@ -248,12 +230,6 @@ const resetImport = () => {
 .employee-import-container {
   max-width: 900px;
   margin: 0 auto;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .title {

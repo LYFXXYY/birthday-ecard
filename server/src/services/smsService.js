@@ -29,7 +29,7 @@ export const sendSMS = async (phone, cardUrl, employeeName) => {
 
   try {
     if (provider === 'carrier') {
-      return await _sendWithRetry(() => _carrierSend(phone, cardUrl, employeeName));
+      return await _carrierSend(phone, cardUrl, employeeName);
     } else {
       return await _mockSend(phone, cardUrl, employeeName);
     }
@@ -120,45 +120,5 @@ const _carrierSend = async (phone, cardUrl, employeeName) => {
     error: null,
     sentAt: new Date(),
     rawResponse: data
-  };
-};
-
-/**
- * 带指数退避的重试包装器
- * 
- * 当运营商API调用失败时自动重试，采用指数退避策略：
- * 第1次重试等待 retryDelay * 1ms
- * 第2次重试等待 retryDelay * 2ms
- * 第3次重试等待 retryDelay * 4ms
- */
-const _sendWithRetry = async (sendFn) => {
-  const { maxRetries, retryDelay } = config.sms;
-  let lastError = null;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const result = await sendFn();
-      result.retryCount = attempt;
-      return result;
-    } catch (error) {
-      lastError = error;
-      
-      if (attempt < maxRetries) {
-        const delay = retryDelay * Math.pow(2, attempt);
-        console.warn(`[短信重试] 第 ${attempt + 1}/${maxRetries} 次重试，等待 ${delay}ms，原因: ${error.message}`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-
-  console.error(`[短信发送失败] 已重试 ${maxRetries} 次仍然失败: ${lastError.message}`);
-  
-  return {
-    success: false,
-    messageId: null,
-    provider: 'carrier',
-    retryCount: maxRetries,
-    error: lastError.message,
-    sentAt: new Date()
   };
 };

@@ -59,6 +59,13 @@ export const initSenderHeartbeat = async () => {
   if (!existing) {
     await writeHeartbeat('sender.json');
     console.log('[心跳] 发送服务初始心跳已写入');
+  } else {
+    // 心跳超过 24 小时则刷新，避免启动后立即触发超时警告
+    const hoursSince = (Date.now() - new Date(existing).getTime()) / (1000 * 60 * 60);
+    if (hoursSince > 24) {
+      await writeHeartbeat('sender.json');
+      console.log(`[心跳] 发送服务心跳已刷新（上次心跳 ${hoursSince.toFixed(1)} 小时前）`);
+    }
   }
 };
 

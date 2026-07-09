@@ -51,38 +51,6 @@
       </div>
     </div>
 
-    <!-- 图表区域 -->
-    <div class="charts-grid">
-      <!-- 月度发送趋势 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">月度发送趋势</span>
-        </template>
-        <div ref="monthlyChartRef" class="chart-container"></div>
-      </el-card>
-
-      <!-- 发送状态分布 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">发送状态分布</span>
-        </template>
-        <div ref="statusChartRef" class="chart-container"></div>
-      </el-card>
-
-      <!-- 模板使用排行 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">模板使用排行</span>
-        </template>
-        <div ref="templateChartRef" class="chart-container"></div>
-      </el-card>
-    </div>
-
-    <!-- 模板轮播 -->
-    <el-card v-if="templates.length > 0" class="carousel-section" shadow="hover">
-      <TemplateCarousel :templates="templates" :show-title="true" />
-    </el-card>
-
     <!-- 今日生日员工列表 -->
     <el-card class="birthday-card" shadow="hover">
       <template #header>
@@ -116,6 +84,33 @@
         </div>
       </div>
     </el-card>
+
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+      <!-- 月度发送趋势 -->
+      <el-card class="chart-card" shadow="hover">
+        <template #header>
+          <span class="chart-title">月度发送趋势</span>
+        </template>
+        <div ref="monthlyChartRef" class="chart-container"></div>
+      </el-card>
+
+      <!-- 发送状态分布 -->
+      <el-card class="chart-card" shadow="hover">
+        <template #header>
+          <span class="chart-title">发送状态分布</span>
+        </template>
+        <div ref="statusChartRef" class="chart-container"></div>
+      </el-card>
+
+      <!-- 模板使用排行 -->
+      <el-card class="chart-card" shadow="hover">
+        <template #header>
+          <span class="chart-title">模板使用排行</span>
+        </template>
+        <div ref="templateChartRef" class="chart-container"></div>
+      </el-card>
+    </div>
 
     <!-- 快捷操作 -->
     <el-card class="quick-actions" shadow="hover">
@@ -154,20 +149,9 @@ import { User, Star, CircleCheck, Message, Refresh, Plus, Upload, Picture, Docum
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getTodayBirthdayEmployees, getEmployeeList } from '@/api/employees'
-import { getRecordStats, getMonthlyStats } from '@/api/records'
-import { testSend } from '@/api/records'
+import { getRecordStats, getMonthlyStats, getRecordList, testSend } from '@/api/records'
 import { getSystemStats } from '@/api/monitor'
-import { getTemplateList } from '@/api/templates'
-import type { Template } from '@/api/templates'
 import type { Employee } from '@/api/employees'
-import TemplateCarousel from '@/components/TemplateCarousel.vue'
-
-// 模拟数据常量（开发模式使用）
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: 1, name: '张三', gender: 'male', birthday: '1990-05-15', phone: '13800138001', department: '技术部', position: '工程师', is_active: 1 },
-  { id: 2, name: '李四', gender: 'female', birthday: '1992-05-15', phone: '13900139001', department: '市场部', position: '专员', is_active: 1 },
-  { id: 3, name: '王五', gender: 'male', birthday: '1988-05-15', phone: '13700137001', department: '人事部', position: '经理', is_active: 1 }
-]
 
 // 当前日期
 const currentDate = computed(() => {
@@ -188,9 +172,6 @@ const todayBirthdays = ref<Employee[]>([])
 const sentEmployeeIds = ref<Set<number>>(new Set())
 const sendingId = ref<number | null>(null)
 
-// 模板列表（轮播用）
-const templates = ref<Template[]>([])
-
 // ECharts 实例
 const monthlyChartRef = ref<HTMLElement>()
 const statusChartRef = ref<HTMLElement>()
@@ -208,9 +189,6 @@ const BRAND_COLORS = {
   warning: '#E6A23C',
   danger: '#F56C6C'
 }
-
-// 开发模式
-const isDevMode = import.meta.env.VITE_USE_MOCK === 'true'
 
 // 初始化月度趋势图
 const initMonthlyChart = (monthly: { month: string; total: number; success: number; failed: number }[]) => {
@@ -375,30 +353,17 @@ const handleResize = () => {
 // 加载数据
 const loadData = async () => {
   try {
-    if (isDevMode) {
-      stats.value = {
-        totalEmployees: 128,
-        todayBirthdays: 3,
-        successRate: 95,
-        totalSent: 1256
-      }
-      todayBirthdays.value = MOCK_EMPLOYEES
-      return
-    }
-
     // 并行获取所有数据
-    const [recordStats, empList, monthlyData, systemData, templateList] = await Promise.all([
+    const [recordStats, empList, monthlyData, systemData] = await Promise.all([
       getRecordStats(),
       getEmployeeList({ page: 1, pageSize: 1 }),
       getMonthlyStats(),
-      getSystemStats(),
-      getTemplateList({ is_active: 1 })
+      getSystemStats()
     ])
 
     stats.value.successRate = recordStats.success_rate || 0
     stats.value.totalSent = recordStats.total || 0
     stats.value.totalEmployees = empList.total || 0
-    templates.value = templateList || []
 
     // 获取今日已发送记录
     try {
@@ -408,7 +373,6 @@ const loadData = async () => {
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`
-      const { getRecordList } = await import('@/api/records')
       const todayRecords = await getRecordList({ page: 1, pageSize: 1000, status: 'success', startDate: todayStr, endDate: tomorrowStr })
       todayRecords.list.forEach((r: any) => {
         if (r.employee_id) sentEmployeeIds.value.add(r.employee_id)
@@ -447,11 +411,6 @@ const loadData = async () => {
 // 刷新生日列表
 const refreshBirthdays = async () => {
   try {
-    if (isDevMode) {
-      todayBirthdays.value = MOCK_EMPLOYEES
-      stats.value.todayBirthdays = todayBirthdays.value.length
-      return
-    }
     todayBirthdays.value = await getTodayBirthdayEmployees()
     stats.value.todayBirthdays = todayBirthdays.value.length
   } catch (error) {
@@ -465,8 +424,37 @@ const refreshBirthdays = async () => {
 const handleTestSend = async (employeeId: number) => {
   if (sentEmployeeIds.value.has(employeeId)) return
   sendingId.value = employeeId
+
+  // 阶段提示文案，每 8 秒轮换一次
+  const stageMessages = [
+    '正在查找员工信息…',
+    '正在匹配贺卡模板…',
+    '正在生成贺卡并录制视频（此步骤约需 2-3 分钟，请耐心等待）…',
+    '视频录制中，请勿关闭页面…',
+    '正在编码视频文件…',
+    '正在创建发送记录…',
+    '正在发送短信…'
+  ]
+  let stageIndex = 0
+  const hideLoading = ElMessage({
+    message: stageMessages[0],
+    type: 'info',
+    duration: 0
+  })
+  const stageTimer = setInterval(() => {
+    stageIndex = (stageIndex + 1) % stageMessages.length
+    hideLoading.close()
+    ElMessage({
+      message: stageMessages[stageIndex],
+      type: 'info',
+      duration: 0
+    })
+  }, 8000)
+
   try {
     const res = await testSend(employeeId)
+    clearInterval(stageTimer)
+    hideLoading.close()
     const isSuccess = res?.smsStatus === 'success'
     if (isSuccess) {
       sentEmployeeIds.value.add(employeeId)
@@ -475,6 +463,8 @@ const handleTestSend = async (employeeId: number) => {
       ElMessage.warning('贺卡生成成功，但短信发送失败')
     }
   } catch (error) {
+    clearInterval(stageTimer)
+    hideLoading.close()
     ElMessage.error('测试发送失败')
   } finally {
     sendingId.value = null
@@ -599,22 +589,10 @@ onUnmounted(() => {
   height: 280px;
 }
 
-/* 轮播区域 */
-.carousel-section {
-  margin-bottom: 24px;
-  border-radius: 12px;
-}
-
 /* 生日卡片 */
 .birthday-card {
   margin-bottom: 24px;
   border-radius: 12px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .birthday-list {

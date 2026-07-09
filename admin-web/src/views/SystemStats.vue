@@ -125,7 +125,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getSystemHealth, getSystemStats } from '@/api/monitor'
 import type { SystemHealth, SystemStats } from '@/api/monitor'
-import { ElMessage } from 'element-plus'
 
 // 健康状态数据
 const health = ref<SystemHealth>({

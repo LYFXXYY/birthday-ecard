@@ -7,13 +7,25 @@
 .env.*.local
 
 # 生成的贺卡文件 (动态生成)
-generated-cards/*
+**/generated-cards/*
 !**/generated-cards/.gitkeep
+
+# 生成的贺卡视频 (动态录制)
+**/generated-videos/*
+!**/generated-videos/.gitkeep
+
+# 模板文件夹内预录制的示例视频
+**/output.mp4
+
+# 录制临时文件（含带时间戳后缀的变体）
+**/.recording-temp*/
+
+# 运行时心跳状态
+**/heartbeats/
 
 # 上传文件
 uploads/*
 !**/uploads/.gitkeep
-wenjianjia/**
 
 # 日志文件
 *.log
@@ -23,6 +35,7 @@ logs/
 .vscode/
 .idea/
 .qoder/
+.claude/
 *.swp
 *.swo
 *~

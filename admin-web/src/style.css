@@ -154,3 +154,15 @@ img, svg {
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
+
+/* ===== 全局通用布局类（原各 view scoped 重复定义） ===== */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
