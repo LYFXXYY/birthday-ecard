@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
       include: [{
         model: Employee,
         as: 'employee',
-        attributes: ['name', 'department', 'phone']
+        attributes: ['name', 'department', 'phone', 'level']
       }, {
         model: Template,
         as: 'template',

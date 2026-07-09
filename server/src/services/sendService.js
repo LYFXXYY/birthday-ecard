@@ -14,13 +14,13 @@ import { config } from '../config/index.js';
 
 /**
  * 构建短信/彩信内容文本
- * 有视频时发送视频链接（彩信），无视频时发送贺卡链接（短信）
+ * 包含祝福语正文 + 绝对链接（短信需要完整 URL 才能点击）
+ * cardGenerator 返回的是相对路径，这里拼接 config.baseUrl 转为绝对路径
  */
-const buildSmsBody = (employeeName, videoUrl, cardUrl) => {
-  if (videoUrl) {
-    return `亲爱的${employeeName}，祝您生日快乐！点击查看您的专属生日贺卡视频：${videoUrl}`;
-  }
-  return `亲爱的${employeeName}，祝您生日快乐！点击查看您的专属生日贺卡：${cardUrl}`;
+const buildSmsBody = (employeeName, blessingText, videoUrl, cardUrl) => {
+  const relativeLink = videoUrl || cardUrl;
+  const absoluteLink = relativeLink ? `${config.baseUrl}${relativeLink}` : '';
+  return `亲爱的${employeeName}，祝您生日快乐！${blessingText}\n${absoluteLink}`;
 };
 
 /**
@@ -31,12 +31,12 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
 /**
  * 带指数退避的短信发送包装器
  */
-const sendSMSWithRetry = async (phone, videoUrl, cardUrl, employeeName) => {
+const sendSMSWithRetry = async (phone, smsBody, employeeName) => {
   const maxRetries = 3;
   let smsResult;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    smsResult = await sendSMS(phone, videoUrl || cardUrl, employeeName);
+    smsResult = await sendSMS(phone, smsBody, employeeName);
 
     if (smsResult.success) {
       smsResult.retryCount = attempt;
@@ -126,7 +126,8 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
     console.log(`[发送服务] 贺卡生成完成：视频${videoOk ? '已生成' : videoAttempted ? '录制失败' : '未录制（旧模板）'}`);
 
     // 4. 创建发送记录
-    const smsBody = buildSmsBody(employeeName, cardResult.videoUrl, cardResult.cardUrl);
+    const blessingText = template.default_blessing?.content || '生日快乐！愿你永远开心如意！';
+    const smsBody = buildSmsBody(employeeName, blessingText, cardResult.videoUrl, cardResult.cardUrl);
     const record = await sequelize.transaction(async (t) => {
       const initialStatus = videoAttempted && !videoOk ? 'failed' : (videoOk ? 'recorded' : 'pending');
       const newRecord = await SendRecord.create({
@@ -140,12 +141,13 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
         send_status: initialStatus,
         send_time: new Date(),
         admin_id: adminId,
-        sms_content: smsBody
+        sms_content: smsBody,
+        blessing_content: blessingText
       }, { transaction: t });
 
       // 5. 发送短信/彩信（视频失败时仍发送贺卡链接作为兜底）
       console.log(`[发送服务] 步骤 5/5 - 发送短信到 ${employee.phone}...`);
-      const smsResult = await sendSMSWithRetry(employee.phone, cardResult.videoUrl, cardResult.cardUrl, employeeName);
+      const smsResult = await sendSMSWithRetry(employee.phone, smsBody, employeeName);
       console.log(`[发送服务] 短信发送结果: ${smsResult.success ? '成功' : '失败 - ' + smsResult.error}`);
 
       // 6. 更新状态：视频录制失败时整体为 failed，否则取决于短信结果

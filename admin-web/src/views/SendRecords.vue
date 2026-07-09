@@ -86,27 +86,28 @@
       >
         <el-table-column prop="employee.name" label="员工姓名" width="100" />
         <el-table-column prop="employee.phone" label="手机号" width="130" />
-        <el-table-column prop="employee.department" label="部门" width="120" />
-        <el-table-column label="短信内容" min-width="280">
+        <el-table-column prop="employee.department" label="部门" width="130" />
+        <el-table-column label="职级" width="90">
           <template #default="{ row }">
-            <div class="sms-content">
-              <div class="sms-line">{{ row.sms_content || '暂无短信内容' }}</div>
-              <div class="sms-line sms-link-line" v-if="row.card_url">
-                点击查看贺卡：
-                <el-button
-                  type="primary"
-                  link
-                  size="small"
-                  @click="handlePreviewCard(row)"
-                >
-                  <el-icon><Link /></el-icon>
-                  打开贺卡
-                </el-button>
-              </div>
-            </div>
+            <el-tag :type="getLevelTagType(row.employee?.level)" size="small">
+              {{ getLevelText(row.employee?.level) }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="template.name" label="使用模板" width="130" />
+        <el-table-column label="短信内容" min-width="260">
+          <template #default="{ row }">
+            <el-tooltip
+              v-if="row.sms_content"
+              :content="row.sms_content"
+              placement="top"
+              :show-after="300"
+            >
+              <span class="sms-content">{{ row.sms_content }}</span>
+            </el-tooltip>
+            <span v-else class="sms-empty">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="template.name" label="使用模板" width="120" />
         <el-table-column prop="send_status" label="发送状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.send_status)">
@@ -114,12 +115,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="发送时间" width="180">
+        <el-table-column label="发送时间" width="170">
           <template #default="{ row }">
             {{ formatDateTime(row.send_time) }}
           </template>
         </el-table-column>
-        <el-table-column prop="error_message" label="失败原因" min-width="200">
+        <el-table-column prop="error_message" label="失败原因" min-width="160">
           <template #default="{ row }">
             <el-tooltip :content="row.error_message" placement="top" v-if="row.error_message">
               <span class="error-text">{{ row.error_message }}</span>
@@ -127,15 +128,15 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button
               type="info"
               size="small"
-              @click="handlePreviewCard(row)"
-              :disabled="!row.card_url"
+              @click="handlePreviewVideo(row)"
+              :disabled="!row.video_url"
             >
-              <el-icon><View /></el-icon>
+              <el-icon><VideoPlay /></el-icon>
               预览
             </el-button>
             <el-button 
@@ -170,10 +171,12 @@
           @current-change="handlePageChange"
         />
       </div>
-    <!-- 手机预览对话框 -->
+    </el-card>
+
+    <!-- 手机视频预览对话框 -->
     <el-dialog
       v-model="previewVisible"
-      title="贺卡手机预览"
+      title="贺卡视频预览"
       width="440px"
       :close-on-click-modal="true"
       class="phone-preview-dialog"
@@ -185,30 +188,36 @@
           <span class="phone-time">{{ currentTime }}</span>
           <span class="phone-icons">●●●</span>
         </div>
-        <iframe
-          v-if="previewCardUrl"
-          :src="previewCardUrl"
-          class="phone-screen"
-          sandbox="allow-scripts allow-same-origin"
-          frameborder="0"
-        ></iframe>
+        <div class="phone-screen phone-screen-video">
+          <video
+            v-if="previewVideoUrl"
+            :src="previewVideoUrl"
+            class="video-player"
+            controls
+            autoplay
+            playsinline
+            loop
+          ></video>
+          <div v-else class="no-video">
+            <el-icon :size="48"><VideoPlay /></el-icon>
+            <p>该记录无视频</p>
+          </div>
+        </div>
         <div class="phone-home-bar"></div>
       </div>
       <template #footer>
         <div class="preview-footer">
-          <el-text type="info" size="small" truncated class="preview-url">{{ previewCardUrl }}</el-text>
-          <el-button type="primary" @click="openInNewTab">在新标签页打开</el-button>
+          <el-button type="primary" @click="openVideoFullscreen">全屏播放</el-button>
           <el-button @click="previewVisible = false">关闭</el-button>
         </div>
       </template>
     </el-dialog>
-    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { Search, Refresh, View, Link } from '@element-plus/icons-vue'
+import { Search, Refresh, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecordList, getRecordStats, testSend, deleteRecord } from '@/api/records'
 import type { SendRecord, RecordQueryParams } from '@/api/records'
@@ -251,6 +260,26 @@ const formatDateTime = (value: string | Date | null) => {
   if (isNaN(d.getTime())) return '-'
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+// 职级中文映射
+const getLevelText = (level?: string) => {
+  const map: Record<string, string> = {
+    management: '管理层',
+    manager: '经理',
+    employee: '员工'
+  }
+  return map[level || ''] || '员工'
+}
+
+// 职级标签颜色
+const getLevelTagType = (level?: string) => {
+  const map: Record<string, string> = {
+    management: 'danger',
+    manager: 'warning',
+    employee: ''
+  }
+  return map[level || ''] || ''
 }
 
 // 获取状态类型
@@ -304,7 +333,6 @@ const loadRecords = async () => {
     pagination.total = res.total
   } catch (error) {
     console.error('加载记录列表失败：', error)
-    // 接口异常时使用默认兜底数据
     tableData.value = []
     pagination.total = 0
   } finally {
@@ -355,7 +383,6 @@ const handlePageChange = (page: number) => {
 const handleTestSend = async (employeeId: number) => {
   sendingId.value = employeeId
 
-  // 阶段提示文案，每 8 秒轮换一次
   const stageMessages = [
     '正在查找员工信息…',
     '正在匹配贺卡模板…',
@@ -365,32 +392,54 @@ const handleTestSend = async (employeeId: number) => {
     '正在创建发送记录…',
     '正在发送短信…'
   ]
+
   let stageIndex = 0
-  const hideLoading = ElMessage({
-    message: stageMessages[0],
-    type: 'info',
-    duration: 0
-  })
-  const stageTimer = setInterval(() => {
-    stageIndex = (stageIndex + 1) % stageMessages.length
-    hideLoading.close()
-    ElMessage({
+  let currentMsg: { close: () => void } | null = null
+  let timerId: ReturnType<typeof setTimeout> | null = null
+
+  // 显示当前阶段消息（先渐隐旧消息，再显示新消息）
+  const showStage = () => {
+    if (currentMsg) {
+      currentMsg.close()
+      currentMsg = null
+    }
+    currentMsg = ElMessage({
       message: stageMessages[stageIndex],
       type: 'info',
       duration: 0
     })
-  }, 8000)
+  }
+
+  // 递归推进阶段（每次关闭→等待渐隐→显示下一条）
+  const nextStage = () => {
+    stageIndex = (stageIndex + 1) % stageMessages.length
+    if (currentMsg) {
+      currentMsg.close()
+      currentMsg = null
+    }
+    timerId = setTimeout(() => {
+      showStage()
+      nextStage()
+    }, 300)
+  }
+
+  // 初始显示
+  showStage()
+  timerId = setTimeout(nextStage, 8000)
+
+  // 清理所有消息和定时器
+  const cleanup = () => {
+    if (timerId) { clearTimeout(timerId); timerId = null }
+    if (currentMsg) { currentMsg.close(); currentMsg = null }
+  }
 
   try {
     await testSend(employeeId)
-    clearInterval(stageTimer)
-    hideLoading.close()
+    cleanup()
     ElMessage.success('发送成功')
-    // 刷新列表和统计
     await Promise.all([loadRecords(), loadStats()])
   } catch (error) {
-    clearInterval(stageTimer)
-    hideLoading.close()
+    cleanup()
     ElMessage.error('发送失败，请查看后台日志确认状态')
   } finally {
     sendingId.value = null
@@ -422,9 +471,9 @@ const handleDelete = async (row: SendRecord) => {
   }
 }
 
-// --- 手机预览功能 ---
+// --- 手机视频预览功能 ---
 const previewVisible = ref(false)
-const previewCardUrl = ref('')
+const previewVideoUrl = ref('')
 const currentTime = ref('')
 
 // 获取当前时间（模拟手机状态栏）
@@ -433,21 +482,38 @@ const updateTime = () => {
   currentTime.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 }
 
-// 打开手机预览
-const handlePreviewCard = (row: SendRecord) => {
-  if (!row.card_url) {
-    ElMessage.warning('该记录无贺卡链接')
+// 打开视频预览
+const handlePreviewVideo = (row: SendRecord) => {
+  if (!row.video_url) {
+    ElMessage.warning('该记录无视频')
     return
   }
-  previewCardUrl.value = row.card_url
+  // 将绝对 URL 转为相对路径（后端存的是 http://localhost:3000/video/xxx.mp4）
+  // 相对路径通过 Vite 代理访问，开发/生产通用
+  try {
+    const url = new URL(row.video_url)
+    previewVideoUrl.value = url.pathname
+  } catch {
+    // 已是相对路径则直接使用
+    previewVideoUrl.value = row.video_url
+  }
   updateTime()
   previewVisible.value = true
 }
 
-// 在新标签页打开
-const openInNewTab = () => {
-  if (previewCardUrl.value) {
-    window.open(previewCardUrl.value, '_blank')
+// 全屏播放视频
+const openVideoFullscreen = () => {
+  const video = document.querySelector('.video-player') as HTMLVideoElement | null
+  if (video) {
+    if (video.requestFullscreen) {
+      video.requestFullscreen()
+    } else {
+      // 兼容 webkit 前缀（Safari）
+      const v = video as any
+      if (v.webkitRequestFullscreen) {
+        v.webkitRequestFullscreen()
+      }
+    }
   }
 }
 
@@ -482,7 +548,7 @@ onMounted(() => {
 }
 
 .stat-total {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color, #0085CC) 0%, var(--primary-light, #339AD6) 100%);
 }
 
 .stat-success {
@@ -494,7 +560,7 @@ onMounted(() => {
 }
 
 .stat-rate {
-  background: linear-gradient(135deg, #E6A23C 0%, #ebb563 100%);
+  background: linear-gradient(135deg, var(--accent-color, #95C11F) 0%, #b0d44a 100%);
 }
 
 .stat-value {
@@ -524,17 +590,16 @@ onMounted(() => {
 .sms-content {
   font-size: 13px;
   line-height: 1.6;
-}
-
-.sms-line {
-  margin-bottom: 2px;
-}
-
-.sms-link-line {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   color: #606266;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sms-empty {
+  color: #c0c4cc;
 }
 
 /* 手机预览对话框 */
@@ -596,6 +661,30 @@ onMounted(() => {
   background: #fff;
 }
 
+.phone-screen-video {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.no-video {
+  text-align: center;
+  color: #909399;
+}
+
+.no-video p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
 .phone-home-bar {
   height: 28px;
   background: #000;
@@ -617,12 +706,8 @@ onMounted(() => {
 .preview-footer {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
-}
-
-.preview-url {
-  flex: 1;
-  min-width: 0;
 }
 
 .pagination-container {
@@ -639,7 +724,6 @@ onMounted(() => {
 
   .search-form .el-form-item {
     margin-bottom: 12px;
-    width: 100%;
   }
 
   .search-form .el-input,

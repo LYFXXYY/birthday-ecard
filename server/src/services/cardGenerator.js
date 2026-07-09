@@ -81,32 +81,18 @@ export const generateCard = async (template, employee) => {
     const senderName = config.senderName || '公司工会';
     const companyName = config.companyName || senderName;
     const logoUrl = config.logoUrl || '';
-    const dept = employee.department || '';
-    const pos = employee.position || '';
-
-    // 条件性部门/职位块
-    let deptBlock = '';
-    if (dept || pos) {
-      const deptText = dept && pos ? `${dept} · ${pos}` : dept || pos;
-      deptBlock = `<div class="info-dept anim-item anim-d3">${deptText}</div>`;
-    }
 
     const blessingContent = template.default_blessing?.content || '生日快乐！愿你永远开心如意！';
-    const yearNote = '岁序更新，美好常在。愿过去一年的每一分努力，都化作未来路上的光。';
 
     const replacements = {
       '{{name}}': employee.name || '',
-      '{{deptBlock}}': deptBlock,
-      '{{department}}': dept,
-      '{{position}}': pos,
+      '{{position}}': employee.position || '',
       '{{birthday}}': formatBirthday(employee.birthday),
       '{{sender}}': senderName,
       '{{company}}': companyName,
       '{{logo_url}}': logoUrl,
       '{{blessing}}': blessingContent,
       '{{message}}': blessingContent,
-      '{{year_note}}': yearNote,
-      '{{title}}': `${employee.name}的生日贺卡`,
       '{{year}}': now.getFullYear().toString(),
       '{{month}}': (now.getMonth() + 1).toString(),
       '{{day}}': now.getDate().toString(),
@@ -126,14 +112,12 @@ export const generateCard = async (template, employee) => {
       for (const [placeholder, value] of Object.entries(replacements)) {
         html = html.replaceAll(placeholder, value);
       }
-      // 后处理：移除仅含分隔符的空行
-      html = html.replace(/<div\s[^>]*>\s*·\s*<\/div>/g, '');
       await fs.writeFile(path.join(templateSourceDir, 'index.html'), html, 'utf-8');
 
       // 旧模板直接返回（不录制视频）
       return {
         cardId,
-        cardUrl: `${config.baseUrl}/card/${cardId}`,
+        cardUrl: `/card/${cardId}`,
         cardDir: templateSourceDir,
         videoPath: null,
         videoUrl: null
@@ -146,13 +130,25 @@ export const generateCard = async (template, employee) => {
     const cardDir = path.resolve(config.cardsDir, cardId);
     await copyDir(templateSourceDir, cardDir);
 
-    // 1.5 复制背景音乐到卡片目录（使 ../music/music.mp3 路径可访问）
+    // 1.5 复制背景音乐到卡片目录（使 {{music_url}} → music.mp3 路径可访问）
     const musicSourcePath = path.join(DATA_DIR, 'music', 'music.mp3');
     const musicDestPath = path.join(cardDir, 'music.mp3');
     try {
       await fs.copyFile(musicSourcePath, musicDestPath);
     } catch (err) {
       console.warn('[贺卡生成] 复制音乐文件失败:', err.message);
+    }
+
+    // 1.6 复制 logo.svg 到卡片父目录（使模板中 ../logo.svg 引用可访问）
+    const logoSourcePath = path.join(DATA_DIR, 'logo.svg');
+    const logoDestPath = path.join(config.cardsDir, 'logo.svg');
+    try {
+      if (fsSync.existsSync(logoSourcePath)) {
+        await fs.mkdir(config.cardsDir, { recursive: true });
+        await fs.copyFile(logoSourcePath, logoDestPath);
+      }
+    } catch (err) {
+      console.warn('[贺卡生成] 复制 logo 文件失败:', err.message);
     }
 
     // 2. 递归替换占位符（将 {{music_url}} 替换为本地相对路径 music.mp3）
@@ -183,11 +179,11 @@ export const generateCard = async (template, employee) => {
       console.warn(`[贺卡生成] 模板无 record.js，跳过视频录制`);
     }
 
-    const videoUrl = videoSuccess ? `${config.baseUrl}/video/${cardId}.mp4` : null;
+    const videoUrl = videoSuccess ? `/video/${cardId}.mp4` : null;
 
     return {
       cardId,
-      cardUrl: `${config.baseUrl}/card/${cardId}`,
+      cardUrl: `/card/${cardId}`,
       cardDir,
       videoPath: videoSuccess ? videoPath : null,
       videoUrl,

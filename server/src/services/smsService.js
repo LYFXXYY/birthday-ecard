@@ -12,8 +12,8 @@ import { config } from '../config/index.js';
  * 该函数永远不会抛出异常，所有错误都通过返回值中的 success/error 字段体现。
  * 
  * @param {string} phone - 接收方手机号
- * @param {string} cardUrl - 贺卡访问链接
- * @param {string} employeeName - 员工姓名（用于日志和短信内容）
+ * @param {string} smsBody - 完整短信内容文本（由 sendService.buildSmsBody 构建）
+ * @param {string} employeeName - 员工姓名（用于日志）
  * @returns {Promise<{
  *   success: boolean,      // 是否发送成功
  *   messageId: string|null,// 运营商返回的消息ID（mock模式为模拟ID）
@@ -23,15 +23,15 @@ import { config } from '../config/index.js';
  *   sentAt: Date           // 发送时间
  * }>}
  */
-export const sendSMS = async (phone, cardUrl, employeeName) => {
+export const sendSMS = async (phone, smsBody, employeeName) => {
   const provider = config.sms.provider;
   const sentAt = new Date();
 
   try {
     if (provider === 'carrier') {
-      return await _carrierSend(phone, cardUrl, employeeName);
+      return await _carrierSend(phone, smsBody, employeeName);
     } else {
-      return await _mockSend(phone, cardUrl, employeeName);
+      return await _mockSend(phone, smsBody, employeeName);
     }
   } catch (error) {
     return {
@@ -49,14 +49,14 @@ export const sendSMS = async (phone, cardUrl, employeeName) => {
  * 模拟短信发送 - 仅在控制台输出日志，不实际发送短信
  * 开发阶段使用此模式验证流程是否正常
  */
-const _mockSend = async (phone, cardUrl, employeeName) => {
+const _mockSend = async (phone, smsBody, employeeName) => {
   await new Promise(resolve => setTimeout(resolve, 100));
 
   const messageId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   
   console.log(`[短信模拟] 收件人: ${phone}`);
   console.log(`[短信模拟] 员工: ${employeeName}`);
-  console.log(`[短信模拟] 贺卡链接: ${cardUrl}`);
+  console.log(`[短信模拟] 短信内容: ${smsBody}`);
   console.log(`[短信模拟] 消息ID: ${messageId}`);
 
   return {
@@ -78,19 +78,17 @@ const _mockSend = async (phone, cardUrl, employeeName) => {
  * 3. 请求体格式（手机号、内容的字段名）
  * 4. 响应解析逻辑（成功/失败的判断条件和消息ID提取）
  */
-const _carrierSend = async (phone, cardUrl, employeeName) => {
+const _carrierSend = async (phone, smsBody, employeeName) => {
   const { apiUrl, apiKey, senderId, timeout } = config.sms;
 
   if (!apiUrl) {
     throw new Error('SMS_API_URL 未配置，无法调用运营商接口');
   }
 
-  const messageContent = `亲爱的${employeeName}，祝您生日快乐！点击查看您的专属贺卡：${cardUrl}`;
-
   // TODO: 根据运营商文档调整请求格式
   const response = await axios.post(apiUrl, {
     phone_number: phone,
-    content: messageContent,
+    content: smsBody,
     sender_id: senderId,
     type: 'sms'
   }, {

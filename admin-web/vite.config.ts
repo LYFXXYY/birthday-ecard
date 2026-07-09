@@ -25,6 +25,14 @@ export default defineConfig({
       '/uploads': {
         target: 'http://localhost:3000', // 后端服务器（静态文件）
         changeOrigin: true
+      },
+      '/video': {
+        target: 'http://localhost:3000', // 视频文件
+        changeOrigin: true
+      },
+      '/card': {
+        target: 'http://localhost:3000', // 贺卡文件
+        changeOrigin: true
       }
     }
   },

@@ -8,14 +8,17 @@ export interface SendRecord {
   template_id: number
   card_url: string
   card_id?: string
-  send_status: 'pending' | 'success' | 'failed'
+  video_url?: string | null
+  send_status: 'pending' | 'recording' | 'recorded' | 'sending' | 'success' | 'failed'
   send_time?: string
   error_message?: string | null
+  sms_content?: string | null
   created_at?: string
   employee?: {
     name: string
     phone: string
     department?: string
+    level?: string
   }
   template?: {
     name: string
@@ -27,7 +30,7 @@ export interface RecordQueryParams {
   page?: number
   pageSize?: number
   employeeId?: number
-  status?: 'pending' | 'success' | 'failed'
+  status?: 'pending' | 'recording' | 'recorded' | 'sending' | 'success' | 'failed'
   startDate?: string
   endDate?: string
 }
