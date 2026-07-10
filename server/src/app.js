@@ -20,10 +20,15 @@ import cardRoutes from './routes/card.js';
 import departmentRoutes from './routes/departments.js';
 import operationLogRoutes from './routes/operationLogs.js';
 import monitorRoutes from './routes/monitor.js';
+import systemLogRoutes from './routes/systemLogs.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
+import { initTestEmployees } from './utils/initTestEmployees.js';
+import { getLogger } from './utils/logger.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
 import migrateDatabase from './utils/migrate.js';
+
+const logger = getLogger('app');
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +41,7 @@ async function ensureDirectories() {
     try {
       await fs.mkdir(dir, { recursive: true });
     } catch (err) {
-      console.error(`[启动] 创建目录失败: ${dir}`, err.message);
+      logger.error(`[启动] 创建目录失败: ${dir} - ${err.message}`);
     }
   }
 }
@@ -63,6 +68,7 @@ app.use('/api/records', recordRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/operation-logs', operationLogRoutes);
 app.use('/api/monitor', monitorRoutes);
+app.use('/api/system-logs', systemLogRoutes);
 
 // 贺卡访问路由（公开）
 app.use('/card', cardRoutes);
@@ -84,19 +90,20 @@ const startServer = async () => {
 
     // 同步表结构：创建尚不存在的表
     await sequelize.sync();
-    console.log('[数据库] 连接成功');
+    logger.info('[数据库] 连接成功');
 
     await initDefaultAdmin();
     await initDefaultTemplate();
+    await initTestEmployees();
 
     // 启动定时任务
     startBirthdayScheduler();
 
     app.listen(config.port, () => {
-      console.log(`[服务器] 运行在 http://localhost:${config.port}`);
+      logger.info(`[服务器] 运行在 http://localhost:${config.port}`);
     });
   } catch (err) {
-    console.error('[启动失败]', err);
+    logger.error('[启动失败]', err);
     process.exit(1);
   }
 };

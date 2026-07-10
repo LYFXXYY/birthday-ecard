@@ -15,6 +15,11 @@ const OperationLog = sequelize.define('OperationLog', {
       key: 'id'
     }
   },
+  operator_type: {
+    type: DataTypes.ENUM('admin', 'system'),
+    allowNull: false,
+    defaultValue: 'admin'
+  },
   action: {
     type: DataTypes.STRING(50),
     allowNull: false

@@ -6,7 +6,8 @@
  */
 import { Op, fn, col, literal } from 'sequelize';
 import { sequelize, SendRecord, Employee } from '../models/index.js';
-import { getSenderHeartbeat } from './heartbeatService.js';
+import { getSenderHeartbeat, getMonitorHeartbeat } from './heartbeatService.js';
+import { getCronJobsStatus } from './scheduler.js';
 
 // 心跳超时阈值：25 小时（发送服务每日 08:00 运行一次，需覆盖全天）
 const HEARTBEAT_TIMEOUT_MS = 25 * 60 * 60 * 1000;
@@ -133,4 +134,98 @@ export const getSystemStats = async () => {
     today_count,
     level_stats
   };
+};
+
+/**
+ * 获取内存使用情况
+ */
+export const getMemoryUsage = () => {
+  const mem = process.memoryUsage();
+  const toMB = (bytes) => Math.round(bytes / 1024 / 1024 * 100) / 100;
+  return {
+    rss: toMB(mem.rss),
+    heapUsed: toMB(mem.heapUsed),
+    heapTotal: toMB(mem.heapTotal),
+    external: toMB(mem.external),
+    usagePercent: Math.round(mem.heapUsed / mem.heapTotal * 100)
+  };
+};
+
+/**
+ * 获取定时任务运行状态
+ */
+export const getCronStatus = () => {
+  return getCronJobsStatus();
+};
+
+/**
+ * 获取系统告警
+ * 
+ * 检查规则：
+ * 1. 近 7 天发送失败率 > 30%
+ * 2. 超过 3 天无成功发送记录
+ * 3. 发送服务心跳超时
+ */
+export const getAlerts = async () => {
+  const alerts = [];
+
+  // 1. 近 7 天失败率检查
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const recentTotal = await SendRecord.count({
+    where: { created_at: { [Op.gte]: sevenDaysAgo } }
+  });
+
+  if (recentTotal > 0) {
+    const recentFailed = await SendRecord.count({
+      where: {
+        send_status: 'failed',
+        created_at: { [Op.gte]: sevenDaysAgo }
+      }
+    });
+    const failRate = recentFailed / recentTotal;
+    if (failRate > 0.3) {
+      alerts.push({
+        level: 'error',
+        type: 'high_failure_rate',
+        message: `近 7 天发送失败率 ${(failRate * 100).toFixed(1)}%（${recentFailed}/${recentTotal}）`,
+        created_at: new Date().toISOString()
+      });
+    }
+  }
+
+  // 2. 超过 3 天无成功发送
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+  const recentSuccess = await SendRecord.count({
+    where: {
+      send_status: 'success',
+      created_at: { [Op.gte]: threeDaysAgo }
+    }
+  });
+
+  if (recentSuccess === 0 && recentTotal > 0) {
+    alerts.push({
+      level: 'warning',
+      type: 'no_recent_success',
+      message: '超过 3 天无成功发送记录，请检查服务状态',
+      created_at: new Date().toISOString()
+    });
+  }
+
+  // 3. 发送服务心跳超时
+  const senderStatus = await checkSenderHealth();
+  if (senderStatus === 'unhealthy') {
+    const lastBeat = await getSenderHeartbeat();
+    alerts.push({
+      level: 'error',
+      type: 'heartbeat_timeout',
+      message: `发送服务心跳超时${lastBeat ? `（最后心跳: ${lastBeat}）` : '（无心跳记录）'}`,
+      created_at: new Date().toISOString()
+    });
+  }
+
+  return alerts;
 };

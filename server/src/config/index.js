@@ -1,4 +1,7 @@
 // config/index.js 由 app.js 统一加载 dotenv，此文件不再重复调用
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('config');
 
 const jwtSecret = process.env.JWT_SECRET || 'default_secret_change_in_production';
 const nodeEnv = process.env.NODE_ENV || 'development';
@@ -6,12 +9,12 @@ const smsProvider = process.env.SMS_PROVIDER || 'mock';
 
 // 生产环境安全警告
 if (nodeEnv === 'production' && jwtSecret === 'default_secret_change_in_production') {
-  console.error('[安全警告] JWT_SECRET 使用默认值！生产环境必须设置强密钥！');
-  console.error('[安全警告] 请在 .env 文件中设置 JWT_SECRET 为一个至少32字符的随机字符串');
+  logger.error('[安全警告] JWT_SECRET 使用默认值！生产环境必须设置强密钥！');
+  logger.error('[安全警告] 请在 .env 文件中设置 JWT_SECRET 为一个至少32字符的随机字符串');
 }
 
 if (smsProvider === 'carrier' && !process.env.SMS_API_KEY) {
-  console.warn('[短信警告] SMS_PROVIDER=carrier 但 SMS_API_KEY 未配置，发送将失败！');
+  logger.warn('[短信警告] SMS_PROVIDER=carrier 但 SMS_API_KEY 未配置，发送将失败！');
 }
 
 export const config = {

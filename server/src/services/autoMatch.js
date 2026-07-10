@@ -7,6 +7,9 @@
  *   - 随机选取：从符合条件的记录中随机取 1 条
  */
 import { Blessing, Template } from '../models/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('autoMatch');
 
 /**
  * 随机选取一条通用祝福语
@@ -60,9 +63,9 @@ export const autoAssignBlessingToTemplate = async (template) => {
   const blessing = await pickRandomUniversalBlessing();
   if (blessing) {
     await template.update({ default_blessing_id: blessing.id });
-    console.log(`[自动匹配] 模板 #${template.id}「${template.name}」→ 祝福语 #${blessing.id}`);
+    logger.info(`[自动匹配] 模板 #${template.id}「${template.name}」→ 祝福语 #${blessing.id}`);
   } else {
-    console.warn('[自动匹配] 无可用通用祝福语，跳过分配');
+    logger.warn('[自动匹配] 无可用通用祝福语，跳过分配');
   }
   return template;
 };
@@ -78,9 +81,9 @@ export const autoAssignTemplateToEmployee = async (employee) => {
   const template = await pickRandomUniversalTemplate(employee.level);
   if (template) {
     await employee.update({ default_template_id: template.id });
-    console.log(`[自动匹配] 员工 #${employee.id}「${employee.name}」→ 模板 #${template.id}「${template.name}」`);
+    logger.info(`[自动匹配] 员工 #${employee.id}「${employee.name}」→ 模板 #${template.id}「${template.name}」`);
   } else {
-    console.warn('[自动匹配] 无可用通用模板，跳过分配');
+    logger.warn('[自动匹配] 无可用通用模板，跳过分配');
   }
   return employee;
 };

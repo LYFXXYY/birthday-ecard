@@ -12,6 +12,9 @@ import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
 import { sendBirthdayCard } from '../services/sendService.js';
 import { autoAssignTemplateToEmployee, pickRandomUniversalTemplate } from '../services/autoMatch.js';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('employee');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -311,7 +314,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       return error(res, '请上传Excel文件', 400);
     }
 
-    console.log(`[导入] 文件: ${req.file.originalname}, 路径: ${req.file.path}, 大小: ${req.file.size} bytes`);
+    logger.info(`[导入] 文件: ${req.file.originalname}, 路径: ${req.file.path}, 大小: ${req.file.size} bytes`);
     const employees = parseEmployeeExcel(req.file.path, req.file.originalname);
     const errors = [];
 
@@ -369,7 +372,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       }
     }
     if (autoMatched > 0) {
-      console.log(`[导入] 已为 ${autoMatched} 位新员工自动匹配通用模板`);
+      logger.info(`[导入] 已为 ${autoMatched} 位新员工自动匹配通用模板`);
     }
 
     // 删除临时文件

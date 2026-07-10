@@ -14,5 +14,35 @@ export interface SystemStats {
   level_stats: { level: string; count: number }[]
 }
 
+export interface MemoryUsage {
+  rss: number
+  heapUsed: number
+  heapTotal: number
+  external: number
+  usagePercent: number
+}
+
+export interface CronJob {
+  name: string
+  schedule: string
+  last_run: string | null
+  status: 'waiting' | 'running' | 'success' | 'warning' | 'error'
+  message: string
+}
+
+export interface Alert {
+  level: 'info' | 'warning' | 'error'
+  type: string
+  message: string
+  created_at: string
+}
+
+export interface ExtendedStats {
+  memory: MemoryUsage
+  cron_jobs: Record<string, CronJob>
+  alerts: Alert[]
+}
+
 export const getSystemHealth = (): Promise<SystemHealth> => request.get<SystemHealth>('/monitor/status') as any
 export const getSystemStats = (): Promise<SystemStats> => request.get<SystemStats>('/monitor/stats') as any
+export const getExtendedStats = (): Promise<ExtendedStats> => request.get<ExtendedStats>('/monitor/extended') as any

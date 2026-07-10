@@ -2,6 +2,9 @@
 // sequelize.sync() 不会为已存在的表添加新列，此工具弥补该缺陷
 import { sequelize } from '../config/database.js';
 import { QueryTypes } from 'sequelize';
+import { getLogger } from './logger.js';
+
+const logger = getLogger('migration');
 
 const MIGRATIONS = [
   // ===== send_records 表的 SMS 追踪字段 =====
@@ -166,6 +169,13 @@ const MIGRATIONS = [
       AND IS_NULLABLE = 'YES'
     `,
     sql: "ALTER TABLE templates MODIFY COLUMN html_content MEDIUMTEXT NULL"
+  },
+
+  // ===== operation_logs 表 operator_type 字段 =====
+  {
+    table: 'operation_logs',
+    column: 'operator_type',
+    sql: "ALTER TABLE operation_logs ADD COLUMN operator_type ENUM('admin','system') NOT NULL DEFAULT 'admin'"
   }
 ];
 
@@ -186,16 +196,16 @@ const migrateDatabase = async () => {
       if (!results) {
         await sequelize.query(migration.sql);
         applied++;
-        console.log(`[迁移] 已应用: ${migration.table} - ${migration.column}`);
+        logger.info(`[迁移] 已应用: ${migration.table} - ${migration.column}`);
       }
     } catch (err) {
       // 忽略错误（表不存在等情况）
-      console.warn(`[迁移] ${migration.table}.${migration.column} 跳过: ${err.message}`);
+      logger.warn(`[迁移] ${migration.table}.${migration.column} 跳过: ${err.message}`);
     }
   }
 
   if (applied > 0) {
-    console.log(`[迁移] 完成，共应用 ${applied} 项迁移`);
+    logger.info(`[迁移] 完成，共应用 ${applied} 项迁移`);
   }
 };
 

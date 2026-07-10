@@ -4,4 +4,5 @@ generated-cards/
 generated-videos/
 heartbeats/
 uploads/
+logs/
 *.log
