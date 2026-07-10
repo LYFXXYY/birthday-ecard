@@ -21,6 +21,26 @@
         v-loading="loading"
         style="max-width: 800px; margin: 0 auto; padding: 20px;"
       >
+        <!-- 文件夹模板专属信息（只读） -->
+        <template v-if="isEdit && formData.folder_path">
+          <el-divider content-position="left">模板文件</el-divider>
+
+          <el-form-item label="缩略图" v-if="formData.thumbnail">
+            <div class="thumbnail-preview">
+              <img :src="getThumbnailUrl()" alt="模板缩略图" />
+            </div>
+          </el-form-item>
+
+          <el-form-item label="模板素材">
+            <div class="asset-gallery" v-if="imageAssets.length > 0">
+              <div v-for="asset in imageAssets" :key="asset.name" class="asset-item">
+                <img :src="asset.url" :alt="asset.name" />
+              </div>
+            </div>
+            <el-empty v-else description="暂无图片素材" :image-size="60" />
+          </el-form-item>
+        </template>
+
         <el-form-item label="模板名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入模板名称" />
         </el-form-item>
@@ -50,7 +70,6 @@
             <el-option label="4 页（员工）" :value="4" />
             <el-option label="7 页（管理层/经理）" :value="7" />
           </el-select>
-          <div class="hint-text">阶段八：按页数匹配，4 页对应员工，7 页对应管理层/经理</div>
         </el-form-item>
 
         <el-form-item label="默认祝福语" prop="default_blessing_id">
@@ -70,26 +89,6 @@
           </el-select>
           <div class="hint-text">如果选择，生成贺卡时将使用该祝福语替换 {{ blessingPlaceholder }} 占位符。</div>
         </el-form-item>
-
-        <!-- 文件夹模板专属信息（只读） -->
-        <template v-if="isEdit && formData.folder_path">
-          <el-divider content-position="left">模板文件</el-divider>
-
-          <el-form-item label="缩略图" v-if="formData.thumbnail">
-            <div class="thumbnail-preview">
-              <img :src="getThumbnailUrl()" alt="模板缩略图" />
-            </div>
-          </el-form-item>
-
-          <el-form-item label="模板素材">
-            <div class="asset-gallery" v-if="imageAssets.length > 0">
-              <div v-for="asset in imageAssets" :key="asset.name" class="asset-item">
-                <img :src="asset.url" :alt="asset.name" />
-              </div>
-            </div>
-            <el-empty v-else description="暂无图片素材" :image-size="60" />
-          </el-form-item>
-        </template>
 
         <el-form-item>
           <el-button type="primary" @click="handleSubmit" :loading="submitting">

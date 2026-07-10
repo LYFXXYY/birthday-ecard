@@ -5,10 +5,6 @@
       <template #header>
         <div class="card-header">
           <span class="title">贺卡模板管理</span>
-          <el-button type="primary" @click="handleBackfillBlessings" :loading="backfilling">
-            <el-icon><MagicStick /></el-icon>
-            补配祝福语
-          </el-button>
         </div>
       </template>
 
@@ -69,9 +65,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Delete, MagicStick } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
+import { getTemplateList, deleteTemplate } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
@@ -79,7 +75,6 @@ const router = useRouter()
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
-const backfilling = ref(false)
 
 // 获取员工级别文字
 const getLevelText = (level?: string | null) => {
@@ -139,36 +134,6 @@ const handleDelete = async (template: Template) => {
       console.error('删除失败：', error)
       ElMessage.error('删除失败')
     }
-  }
-}
-
-// 补配祝福语（回填未匹配祝福语的模板）
-const handleBackfillBlessings = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '将为所有未匹配祝福语的模板随机分配一条通用祝福语，确定继续？',
-      '补配祝福语',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
-    backfilling.value = true
-    const res = await backfillBlessings()
-    if (res.updated === 0) {
-      ElMessage.info('所有模板均已匹配祝福语，无需补配')
-    } else {
-      ElMessage.success(`已为 ${res.updated} 个模板补配祝福语`)
-    }
-    loadTemplates()
-  } catch (err: any) {
-    if (err !== 'cancel') {
-      console.error('补配失败：', err)
-      ElMessage.error('补配失败，请稍后重试')
-    }
-  } finally {
-    backfilling.value = false
   }
 }
 

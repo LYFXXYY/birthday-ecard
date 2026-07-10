@@ -14,5 +14,5 @@ export interface SystemStats {
   level_stats: { level: string; count: number }[]
 }
 
-export const getSystemHealth = () => request.get<SystemHealth>('/monitor/status')
-export const getSystemStats = () => request.get<SystemStats>('/monitor/stats')
+export const getSystemHealth = (): Promise<SystemHealth> => request.get<SystemHealth>('/monitor/status') as any
+export const getSystemStats = (): Promise<SystemStats> => request.get<SystemStats>('/monitor/stats') as any

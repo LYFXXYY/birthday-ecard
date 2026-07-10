@@ -53,65 +53,6 @@
       </el-col>
     </el-row>
 
-    <!-- 今日发送 -->
-    <el-row :gutter="20" class="section">
-      <el-col :span="24">
-        <el-card shadow="hover" class="today-card">
-          <template #header>
-            <span>今日发送</span>
-          </template>
-          <el-statistic title="今日已发送贺卡数" :value="stats.today_count" />
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 底部：数据表格 -->
-    <el-row :gutter="20" class="section">
-      <!-- 模板使用统计 -->
-      <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">
-          <template #header>
-            <span>模板使用统计</span>
-          </template>
-          <el-table
-            :data="stats.template_usage"
-            stripe
-            style="width: 100%"
-            empty-text="暂无数据"
-          >
-            <el-table-column prop="template_name" label="模板名称" />
-            <el-table-column prop="count" label="使用次数" width="120" />
-          </el-table>
-          <!-- 后续可在此处集成 ECharts 饼图 -->
-        </el-card>
-      </el-col>
-
-      <!-- 等级发送统计 -->
-      <el-col :xs="24" :sm="12">
-        <el-card shadow="hover">
-          <template #header>
-            <span>员工等级发送统计</span>
-          </template>
-          <el-table
-            :data="stats.level_stats"
-            stripe
-            style="width: 100%"
-            empty-text="暂无数据"
-          >
-            <el-table-column prop="level" label="等级">
-              <template #default="{ row }">
-                <el-tag :type="levelTagType(row.level)">
-                  {{ levelLabel(row.level) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="count" label="发送次数" width="120" />
-          </el-table>
-          <!-- 后续可在此处集成 ECharts 柱状图 -->
-        </el-card>
-      </el-col>
-    </el-row>
-
     <!-- 刷新状态提示 -->
     <div class="refresh-info">
       <el-tag type="info" size="small">
@@ -201,26 +142,6 @@ function formatTime(iso: string): string {
   } catch {
     return iso
   }
-}
-
-function levelLabel(level: string): string {
-  const map: Record<string, string> = {
-    management: '高管',
-    manager: '中层管理',
-    employee: '普通员工',
-    unknown: '未知'
-  }
-  return map[level] || level
-}
-
-function levelTagType(level: string): '' | 'success' | 'warning' | 'info' {
-  const map: Record<string, '' | 'success' | 'warning' | 'info'> = {
-    management: 'warning',
-    manager: '',
-    employee: 'info',
-    unknown: 'info'
-  }
-  return map[level] || 'info'
 }
 
 // 数据加载
@@ -355,15 +276,6 @@ onUnmounted(() => {
 }
 
 .stat-card :deep(.el-statistic) {
-  justify-content: center;
-}
-
-/* 今日发送 */
-.today-card {
-  text-align: center;
-}
-
-.today-card :deep(.el-statistic) {
   justify-content: center;
 }
 

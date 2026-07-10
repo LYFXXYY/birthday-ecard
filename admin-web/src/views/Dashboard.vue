@@ -71,86 +71,42 @@
             <div class="employee-name">{{ employee.name }}</div>
             <div class="employee-detail">{{ employee.department }} - {{ employee.phone }}</div>
           </div>
-          <el-button 
-            v-if="employee.id !== undefined"
-            :type="sentEmployeeIds.has(employee.id) ? 'info' : 'success'" 
-            :disabled="sentEmployeeIds.has(employee.id) || sendingId === employee.id"
-            :loading="sendingId === employee.id"
-            size="small" 
-            @click="handleTestSend(employee.id)"
-          >
-            {{ sentEmployeeIds.has(employee.id) ? '已发送' : (sendingId === employee.id ? '发送中...' : '测试发送') }}
-          </el-button>
+          <div class="send-action-area">
+            <el-button 
+              v-if="employee.id !== undefined"
+              :type="sentEmployeeIds.has(employee.id) ? 'info' : 'success'" 
+              :disabled="sentEmployeeIds.has(employee.id) || sendingId === employee.id"
+              :loading="sendingId === employee.id"
+              size="small" 
+              @click="handleTestSend(employee.id)"
+            >
+              {{ sentEmployeeIds.has(employee.id) ? '已发送' : (sendingId === employee.id ? `发送中 ${sendProgress}%` : '测试发送') }}
+            </el-button>
+            <div class="send-progress-bar" v-if="sendingId === employee.id">
+              <div class="send-progress-fill" :style="{ width: sendProgress + '%' }"></div>
+            </div>
+          </div>
         </div>
       </div>
     </el-card>
 
     <!-- 图表区域 -->
-    <div class="charts-grid">
-      <!-- 月度发送趋势 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">月度发送趋势</span>
-        </template>
-        <div ref="monthlyChartRef" class="chart-container"></div>
-      </el-card>
-
-      <!-- 发送状态分布 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">发送状态分布</span>
-        </template>
-        <div ref="statusChartRef" class="chart-container"></div>
-      </el-card>
-
-      <!-- 模板使用排行 -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <span class="chart-title">模板使用排行</span>
-        </template>
-        <div ref="templateChartRef" class="chart-container"></div>
-      </el-card>
-    </div>
-
-    <!-- 快捷操作 -->
-    <el-card class="quick-actions" shadow="hover">
+    <el-card class="chart-card" shadow="hover">
       <template #header>
-        <span>快捷操作</span>
+        <span class="chart-title">月度发送趋势</span>
       </template>
-      <div class="actions-grid">
-        <el-button type="primary" @click="$router.push('/employees/add')">
-          <el-icon><Plus /></el-icon>
-          添加员工
-        </el-button>
-        <el-button style="background-color: var(--accent-color); border-color: var(--accent-color); color: #fff" @click="$router.push('/employees/import')">
-          <el-icon><Upload /></el-icon>
-          批量导入
-        </el-button>
-        <el-button style="background-color: var(--secondary-color); border-color: var(--secondary-color); color: #fff" @click="$router.push('/templates')">
-          <el-icon><Picture /></el-icon>
-          管理模板
-        </el-button>
-        <el-button type="warning" @click="$router.push('/blessings')">
-          <el-icon><ChatDotRound /></el-icon>
-          祝福语管理
-        </el-button>
-        <el-button type="info" @click="$router.push('/records')">
-          <el-icon><Document /></el-icon>
-          查看记录
-        </el-button>
-      </div>
+      <div ref="monthlyChartRef" class="chart-container"></div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { User, Star, CircleCheck, Message, Refresh, Plus, Upload, Picture, Document, ChatDotRound } from '@element-plus/icons-vue'
+import { User, Star, CircleCheck, Message, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getTodayBirthdayEmployees, getEmployeeList } from '@/api/employees'
 import { getRecordStats, getMonthlyStats, getRecordList, testSend } from '@/api/records'
-import { getSystemStats } from '@/api/monitor'
 import type { Employee } from '@/api/employees'
 
 // 当前日期
@@ -171,14 +127,11 @@ const stats = ref({
 const todayBirthdays = ref<Employee[]>([])
 const sentEmployeeIds = ref<Set<number>>(new Set())
 const sendingId = ref<number | null>(null)
+const sendProgress = ref(0)
 
 // ECharts 实例
 const monthlyChartRef = ref<HTMLElement>()
-const statusChartRef = ref<HTMLElement>()
-const templateChartRef = ref<HTMLElement>()
 let monthlyChart: echarts.ECharts | null = null
-let statusChart: echarts.ECharts | null = null
-let templateChart: echarts.ECharts | null = null
 
 // 品牌色
 const BRAND_COLORS = {
@@ -254,111 +207,19 @@ const initMonthlyChart = (monthly: { month: string; total: number; success: numb
   })
 }
 
-// 初始化状态分布图
-const initStatusChart = (sendStats: { success: number; failed: number; pending?: number }) => {
-  if (!statusChartRef.value) return
-  statusChart = echarts.init(statusChartRef.value)
-
-  statusChart.setOption({
-    tooltip: {
-      trigger: 'item',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#eee',
-      textStyle: { color: '#333' }
-    },
-    legend: {
-      bottom: 0,
-      textStyle: { color: '#666' }
-    },
-    series: [
-      {
-        type: 'pie',
-        radius: ['45%', '70%'],
-        center: ['50%', '45%'],
-        avoidLabelOverlap: true,
-        itemStyle: {
-          borderRadius: 6,
-          borderColor: '#fff',
-          borderWidth: 2
-        },
-        label: {
-          show: true,
-          formatter: '{b}: {c}',
-          color: '#666'
-        },
-        data: [
-          { value: sendStats.success, name: '成功', itemStyle: { color: BRAND_COLORS.success } },
-          { value: sendStats.failed, name: '失败', itemStyle: { color: BRAND_COLORS.danger } },
-          { value: sendStats.pending || 0, name: '待发送', itemStyle: { color: BRAND_COLORS.warning } }
-        ].filter(d => d.value > 0)
-      }
-    ]
-  })
-}
-
-// 初始化模板使用排行图
-const initTemplateChart = (templateUsage: { template_name: string; count: number }[]) => {
-  if (!templateChartRef.value) return
-  templateChart = echarts.init(templateChartRef.value)
-
-  // 按使用量排序，取前8
-  const sorted = [...templateUsage].sort((a, b) => b.count - a.count).slice(0, 8)
-  const names = sorted.map(t => t.template_name || '未知模板')
-  const counts = sorted.map(t => t.count)
-
-  templateChart.setOption({
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#eee',
-      textStyle: { color: '#333' }
-    },
-    grid: { top: 10, right: 20, bottom: 10, left: 100, containLabel: true },
-    xAxis: {
-      type: 'value',
-      axisLabel: { color: '#999' },
-      splitLine: { lineStyle: { color: '#f0f0f0' } }
-    },
-    yAxis: {
-      type: 'category',
-      data: names,
-      axisLabel: { color: '#666', fontSize: 12 },
-      axisLine: { lineStyle: { color: '#ddd' } }
-    },
-    series: [
-      {
-        type: 'bar',
-        data: counts,
-        barWidth: '50%',
-        itemStyle: {
-          borderRadius: [0, 4, 4, 0],
-          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: BRAND_COLORS.primary },
-            { offset: 1, color: BRAND_COLORS.secondary }
-          ])
-        }
-      }
-    ]
-  })
-}
-
 // 窗口resize处理
 const handleResize = () => {
   monthlyChart?.resize()
-  statusChart?.resize()
-  templateChart?.resize()
 }
 
 // 加载数据
 const loadData = async () => {
   try {
     // 并行获取所有数据
-    const [recordStats, empList, monthlyData, systemData] = await Promise.all([
+    const [recordStats, empList, monthlyData] = await Promise.all([
       getRecordStats(),
       getEmployeeList({ page: 1, pageSize: 1 }),
-      getMonthlyStats(),
-      getSystemStats()
+      getMonthlyStats()
     ])
 
     stats.value.successRate = recordStats.success_rate || 0
@@ -391,17 +252,6 @@ const loadData = async () => {
     if (monthlyData.monthly.length > 0) {
       initMonthlyChart(monthlyData.monthly)
     }
-
-    // 状态分布
-    initStatusChart({
-      success: recordStats.success || 0,
-      failed: recordStats.failed || 0
-    })
-
-    // 模板使用排行
-    if (systemData.template_usage && systemData.template_usage.length > 0) {
-      initTemplateChart(systemData.template_usage)
-    }
   } catch (error) {
     console.error('加载数据失败：', error)
     stats.value = { totalEmployees: 0, todayBirthdays: 0, successRate: 0, totalSent: 0 }
@@ -424,50 +274,32 @@ const refreshBirthdays = async () => {
 const handleTestSend = async (employeeId: number) => {
   if (sentEmployeeIds.value.has(employeeId)) return
   sendingId.value = employeeId
+  sendProgress.value = 0
 
-  // 阶段提示文案，每 8 秒轮换一次
-  const stageMessages = [
-    '正在查找员工信息…',
-    '正在匹配贺卡模板…',
-    '正在生成贺卡并录制视频（此步骤约需 2-3 分钟，请耐心等待）…',
-    '视频录制中，请勿关闭页面…',
-    '正在编码视频文件…',
-    '正在创建发送记录…',
-    '正在发送短信…'
-  ]
-  let stageIndex = 0
-  const hideLoading = ElMessage({
-    message: stageMessages[0],
-    type: 'info',
-    duration: 0
-  })
-  const stageTimer = setInterval(() => {
-    stageIndex = (stageIndex + 1) % stageMessages.length
-    hideLoading.close()
-    ElMessage({
-      message: stageMessages[stageIndex],
-      type: 'info',
-      duration: 0
-    })
-  }, 8000)
+  // 模拟进度：每 3 秒增长一点，最高到 95%
+  const progressTimer = setInterval(() => {
+    if (sendProgress.value < 95) {
+      sendProgress.value = Math.min(sendProgress.value + Math.floor(Math.random() * 3) + 1, 95)
+    }
+  }, 3000)
 
   try {
     const res = await testSend(employeeId)
-    clearInterval(stageTimer)
-    hideLoading.close()
+    clearInterval(progressTimer)
+    sendProgress.value = 100
     const isSuccess = res?.smsStatus === 'success'
     if (isSuccess) {
       sentEmployeeIds.value.add(employeeId)
-      ElMessage.success('测试发送成功')
-    } else {
-      ElMessage.warning('贺卡生成成功，但短信发送失败')
     }
   } catch (error) {
-    clearInterval(stageTimer)
-    hideLoading.close()
+    clearInterval(progressTimer)
     ElMessage.error('测试发送失败')
   } finally {
-    sendingId.value = null
+    // 短暂展示 100% 后重置
+    setTimeout(() => {
+      sendingId.value = null
+      sendProgress.value = 0
+    }, 800)
   }
 }
 
@@ -479,8 +311,6 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   monthlyChart?.dispose()
-  statusChart?.dispose()
-  templateChart?.dispose()
 })
 </script>
 
@@ -563,19 +393,9 @@ onUnmounted(() => {
 }
 
 /* 图表区域 */
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
 .chart-card {
   border-radius: 12px;
-}
-
-.chart-card:first-child {
-  grid-column: 1 / -1;
+  margin-bottom: 24px;
 }
 
 .chart-title {
@@ -628,22 +448,27 @@ onUnmounted(() => {
   color: var(--text-secondary);
 }
 
-/* 快捷操作 */
-.quick-actions {
-  border-radius: 12px;
+/* 发送操作区域 */
+.send-action-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+.send-progress-bar {
+  width: 100px;
+  height: 4px;
+  background: #e4e7ed;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.actions-grid .el-button {
-  width: 100%;
-  height: 44px;
-  font-size: 14px;
-  border-radius: 8px;
+.send-progress-fill {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 2px;
+  transition: width 0.5s ease;
 }
 
 /* 移动端适配 */
@@ -680,16 +505,8 @@ onUnmounted(() => {
     font-size: 22px;
   }
 
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-
   .chart-container {
     height: 240px;
-  }
-
-  .actions-grid {
-    grid-template-columns: 1fr 1fr;
   }
 
   .birthday-item {
@@ -705,10 +522,6 @@ onUnmounted(() => {
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .actions-grid {
     grid-template-columns: 1fr;
   }
 }

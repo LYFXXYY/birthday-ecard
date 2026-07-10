@@ -32,7 +32,8 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (response: AxiosResponse) => {
     // 处理非 JSON 响应（如模板预览返回的 HTML）
-    const contentType = response.headers['content-type'] || ''
+    const raw = response.headers['content-type'] || ''
+    const contentType = typeof raw === 'string' ? raw : String(raw)
     if (contentType.includes('text/html') || typeof response.data === 'string') {
       return response.data
     }

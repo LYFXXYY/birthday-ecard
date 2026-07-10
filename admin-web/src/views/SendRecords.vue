@@ -84,30 +84,31 @@
         border
         style="width: 100%"
       >
+        <el-table-column type="expand">
+          <template #default="{ row }">
+            <div class="expand-content">
+              <el-descriptions :column="2" border size="small">
+                <el-descriptions-item label="部门">{{ row.employee?.department || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="职级">
+                  <el-tag :type="getLevelTagType(row.employee?.level)" size="small">
+                    {{ getLevelText(row.employee?.level) }}
+                  </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="使用模板">{{ row.template?.name || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="失败原因">
+                  <span v-if="row.error_message" class="error-text">{{ row.error_message }}</span>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="短信内容" :span="2">
+                  <div class="sms-content-full" v-if="row.sms_content">{{ row.sms_content }}</div>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+              </el-descriptions>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column prop="employee.name" label="员工姓名" width="100" />
         <el-table-column prop="employee.phone" label="手机号" width="130" />
-        <el-table-column prop="employee.department" label="部门" width="130" />
-        <el-table-column label="职级" width="90">
-          <template #default="{ row }">
-            <el-tag :type="getLevelTagType(row.employee?.level)" size="small">
-              {{ getLevelText(row.employee?.level) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="短信内容" min-width="260">
-          <template #default="{ row }">
-            <el-tooltip
-              v-if="row.sms_content"
-              :content="row.sms_content"
-              placement="top"
-              :show-after="300"
-            >
-              <span class="sms-content">{{ row.sms_content }}</span>
-            </el-tooltip>
-            <span v-else class="sms-empty">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="template.name" label="使用模板" width="120" />
         <el-table-column prop="send_status" label="发送状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.send_status)">
@@ -120,15 +121,7 @@
             {{ formatDateTime(row.send_time) }}
           </template>
         </el-table-column>
-        <el-table-column prop="error_message" label="失败原因" min-width="160">
-          <template #default="{ row }">
-            <el-tooltip :content="row.error_message" placement="top" v-if="row.error_message">
-              <span class="error-text">{{ row.error_message }}</span>
-            </el-tooltip>
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button
               type="info"
@@ -139,18 +132,18 @@
               <el-icon><VideoPlay /></el-icon>
               预览
             </el-button>
-            <el-button 
-              type="primary" 
-              size="small" 
+            <el-button
+              type="primary"
+              size="small"
               @click="handleTestSend(row.employee_id)"
               :loading="sendingId === row.employee_id"
               :disabled="sendingId !== null || row.send_status === 'success'"
             >
-              重发
+              {{ sendingId === row.employee_id ? `发送中 ${sendProgress}%` : '重发' }}
             </el-button>
-            <el-button 
-              type="danger" 
-              size="small" 
+            <el-button
+              type="danger"
+              size="small"
               @click="handleDelete(row)"
             >
               删除
@@ -245,6 +238,7 @@ const dateRange = ref<string[]>([])
 const tableData = ref<SendRecord[]>([])
 const loading = ref(false)
 const sendingId = ref<number | null>(null)
+const sendProgress = ref(0)
 
 // 分页
 const pagination = reactive({
@@ -382,67 +376,30 @@ const handlePageChange = (page: number) => {
 // 测试发送
 const handleTestSend = async (employeeId: number) => {
   sendingId.value = employeeId
+  sendProgress.value = 0
 
-  const stageMessages = [
-    '正在查找员工信息…',
-    '正在匹配贺卡模板…',
-    '正在生成贺卡并录制视频（此步骤约需 2-3 分钟，请耐心等待）…',
-    '视频录制中，请勿关闭页面…',
-    '正在编码视频文件…',
-    '正在创建发送记录…',
-    '正在发送短信…'
-  ]
-
-  let stageIndex = 0
-  let currentMsg: { close: () => void } | null = null
-  let timerId: ReturnType<typeof setTimeout> | null = null
-
-  // 显示当前阶段消息（先渐隐旧消息，再显示新消息）
-  const showStage = () => {
-    if (currentMsg) {
-      currentMsg.close()
-      currentMsg = null
+  // 模拟进度：每 3 秒增长一点，最高到 95%
+  const progressTimer = setInterval(() => {
+    if (sendProgress.value < 95) {
+      sendProgress.value = Math.min(sendProgress.value + Math.floor(Math.random() * 3) + 1, 95)
     }
-    currentMsg = ElMessage({
-      message: stageMessages[stageIndex],
-      type: 'info',
-      duration: 0
-    })
-  }
-
-  // 递归推进阶段（每次关闭→等待渐隐→显示下一条）
-  const nextStage = () => {
-    stageIndex = (stageIndex + 1) % stageMessages.length
-    if (currentMsg) {
-      currentMsg.close()
-      currentMsg = null
-    }
-    timerId = setTimeout(() => {
-      showStage()
-      nextStage()
-    }, 300)
-  }
-
-  // 初始显示
-  showStage()
-  timerId = setTimeout(nextStage, 8000)
-
-  // 清理所有消息和定时器
-  const cleanup = () => {
-    if (timerId) { clearTimeout(timerId); timerId = null }
-    if (currentMsg) { currentMsg.close(); currentMsg = null }
-  }
+  }, 3000)
 
   try {
     await testSend(employeeId)
-    cleanup()
+    clearInterval(progressTimer)
+    sendProgress.value = 100
     ElMessage.success('发送成功')
     await Promise.all([loadRecords(), loadStats()])
   } catch (error) {
-    cleanup()
+    clearInterval(progressTimer)
     ElMessage.error('发送失败，请查看后台日志确认状态')
   } finally {
-    sendingId.value = null
+    // 短暂展示 100% 后重置
+    setTimeout(() => {
+      sendingId.value = null
+      sendProgress.value = 0
+    }, 800)
   }
 }
 
@@ -598,8 +555,20 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
+.sms-content-full {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #606266;
+  word-break: break-all;
+}
+
 .sms-empty {
   color: #c0c4cc;
+}
+
+/* 展开内容样式 */
+.expand-content {
+  padding: 16px 20px;
 }
 
 /* 手机预览对话框 */
