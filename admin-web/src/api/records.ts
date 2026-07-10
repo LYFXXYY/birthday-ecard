@@ -54,7 +54,7 @@ export const getRecordStats = (): Promise<RecordStats> => {
 }
 
 // 测试发送（涉及视频录制和编码，耗时较长）
-export const testSend = (employeeId: number) => {
+export const testSend = (employeeId: number): Promise<any> => {
   return request.post(`/records/test-send/${employeeId}`, null, { timeout: 300000 })
 }
 

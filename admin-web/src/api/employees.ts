@@ -56,7 +56,7 @@ export const deleteEmployee = (id: number) => {
 }
 
 // Excel批量导入（400验证错误已在拦截器中特殊处理，透传给调用方）
-export const importEmployees = async (file: File) => {
+export const importEmployees = async (file: File): Promise<any> => {
   const formData = new FormData()
   formData.append('file', file)
   return request.post('/employees/import', formData)

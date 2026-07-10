@@ -128,6 +128,7 @@ import { Back, Download, UploadFilled, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { importEmployees } from '@/api/employees'
+import * as XLSX from 'xlsx'
 
 const router = useRouter()
 
@@ -148,17 +149,33 @@ const importResult = ref<ImportResult | null>(null)
 
 // 下载模板
 const downloadTemplate = () => {
-  // 创建示例数据
-  const templateContent = '姓名,性别,生日,手机号,部门,职位\n张三,male,1990-01-01,13800138000,技术部,工程师\n李四,female,1992-05-15,13900139000,市场部,专员'
-  
-  // 创建 blob 并下载
-  const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = '员工导入模板.csv'
-  link.click()
-  URL.revokeObjectURL(link.href)
-  
+  // 创建工作簿数据
+  const worksheetData = [
+    ['姓名', '性别', '生日', '手机号', '部门', '职位'],
+    ['张三', 'male', '1990-01-01', '13800138000', '技术部', '工程师'],
+    ['李四', 'female', '1992-05-15', '13900139000', '市场部', '专员']
+  ]
+
+  // 创建工作表
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+  // 设置列宽
+  worksheet['!cols'] = [
+    { wch: 10 }, // 姓名
+    { wch: 8 },  // 性别
+    { wch: 12 }, // 生日
+    { wch: 15 }, // 手机号
+    { wch: 15 }, // 部门
+    { wch: 15 }  // 职位
+  ]
+
+  // 创建工作簿
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, '员工导入模板')
+
+  // 导出为xlsx文件
+  XLSX.writeFile(workbook, '员工导入模板.xlsx')
+
   ElMessage.success('模板下载成功')
 }
 
@@ -170,6 +187,21 @@ const handleFileChange = (file: UploadFile) => {
 // 文件超出限制
 const handleExceed = () => {
   ElMessage.warning('只能上传一个文件')
+}
+
+// 上传前校验
+const beforeUpload = (file: File) => {
+  const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')
+  if (!isXlsx) {
+    ElMessage.error('仅支持 .xlsx、.xls 或 .csv 格式')
+    return false
+  }
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过 10MB')
+    return false
+  }
+  return true
 }
 
 // 清除文件

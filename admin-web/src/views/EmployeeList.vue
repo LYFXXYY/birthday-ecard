@@ -13,10 +13,6 @@
               <el-icon><Upload /></el-icon>
               批量导入
             </el-button>
-            <el-button type="warning" @click="handleBackfillTemplates" :loading="backfilling">
-              <el-icon><MagicStick /></el-icon>
-              补配模板
-            </el-button>
           </div>
         </div>
       </template>
@@ -195,9 +191,9 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Upload, Search, Refresh, MagicStick } from '@element-plus/icons-vue'
+import { Plus, Upload, Search, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { getEmployeeList, getTodayBirthdayEmployees, deleteEmployee, backfillTemplates } from '@/api/employees'
+import { getEmployeeList, getTodayBirthdayEmployees, deleteEmployee } from '@/api/employees'
 import type { Employee, EmployeeQueryParams } from '@/api/employees'
 import {
   getDepartmentTree,
@@ -409,7 +405,6 @@ const searchForm = reactive({
 
 const tableData = ref<Employee[]>([])
 const loading = ref(false)
-const backfilling = ref(false)
 
 const pagination = reactive({
   page: 1,
@@ -487,28 +482,6 @@ const handleDelete = async (row: Employee) => {
     loadData()
   } catch (error: any) {
     if (error !== 'cancel') ElMessage.error('删除失败，请稍后重试')
-  }
-}
-
-const handleBackfillTemplates = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '将为所有未匹配模板的员工随机分配一个通用模板，确定继续？',
-      '补配模板',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
-    )
-    backfilling.value = true
-    const res = await backfillTemplates()
-    if (res.updated === 0) {
-      ElMessage.info('所有员工均已匹配模板，无需补配')
-    } else {
-      ElMessage.success(`已为 ${res.updated} 位员工补配模板`)
-    }
-    loadData()
-  } catch (err: any) {
-    if (err !== 'cancel') ElMessage.error('补配失败，请稍后重试')
-  } finally {
-    backfilling.value = false
   }
 }
 
