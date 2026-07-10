@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { spawnSync } from 'child_process';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('card');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,7 +139,7 @@ export const generateCard = async (template, employee) => {
     try {
       await fs.copyFile(musicSourcePath, musicDestPath);
     } catch (err) {
-      console.warn('[贺卡生成] 复制音乐文件失败:', err.message);
+      logger.warn(`[贺卡生成] 复制音乐文件失败: ${err.message}`);
     }
 
     // 1.6 复制 logo.svg 到卡片父目录（使模板中 ../logo.svg 引用可访问）
@@ -148,7 +151,7 @@ export const generateCard = async (template, employee) => {
         await fs.copyFile(logoSourcePath, logoDestPath);
       }
     } catch (err) {
-      console.warn('[贺卡生成] 复制 logo 文件失败:', err.message);
+      logger.warn(`[贺卡生成] 复制 logo 文件失败: ${err.message}`);
     }
 
     // 2. 递归替换占位符（将 {{music_url}} 替换为本地相对路径 music.mp3）
@@ -161,7 +164,7 @@ export const generateCard = async (template, employee) => {
     let videoSuccess = false;
 
     if (fsSync.existsSync(recordScript)) {
-      console.log(`[贺卡生成] 调用 record.js 录制视频...`);
+      logger.info(`[贺卡生成] 调用 record.js 录制视频...`);
       const result = spawnSync(process.execPath, [recordScript, videoPath], {
         cwd: cardDir,
         stdio: 'inherit',
@@ -171,12 +174,12 @@ export const generateCard = async (template, employee) => {
       if (result.status === 0 && fsSync.existsSync(videoPath)) {
         videoSuccess = true;
         const sizeMB = (fsSync.statSync(videoPath).size / 1000 / 1000).toFixed(2);
-        console.log(`[贺卡生成] 视频录制成功: ${sizeMB}MB`);
+        logger.info(`[贺卡生成] 视频录制成功: ${sizeMB}MB`);
       } else {
-        console.error(`[贺卡生成] record.js 退出码 ${result.status}，视频录制失败`);
+        logger.error(`[贺卡生成] record.js 退出码 ${result.status}，视频录制失败`);
       }
     } else {
-      console.warn(`[贺卡生成] 模板无 record.js，跳过视频录制`);
+      logger.warn(`[贺卡生成] 模板无 record.js，跳过视频录制`);
     }
 
     const videoUrl = videoSuccess ? `/video/${cardId}.mp4` : null;
@@ -190,7 +193,7 @@ export const generateCard = async (template, employee) => {
       videoAttempted: true
     };
   } catch (error) {
-    console.error('贺卡生成失败:', error);
+    logger.error(`贺卡生成失败: ${error.message}`);
     throw error;
   }
 };

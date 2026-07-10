@@ -1,6 +1,9 @@
 // 初始化默认管理员
 import { Admin } from '../models/index.js';
 import { hashPassword } from './password.js';
+import { getLogger } from './logger.js';
+
+const logger = getLogger('init');
 
 const initDefaultAdmin = async () => {
   try {
@@ -17,12 +20,12 @@ const initDefaultAdmin = async () => {
         display_name: '系统管理员'
       });
       
-      console.log('[初始化] 默认管理员创建成功 (username: admin, password: 123456)');
+      logger.info('[初始化] 默认管理员创建成功 (username: admin, password: 123456)');
     } else {
-      console.log('[初始化] 管理员已存在，跳过创建');
+      logger.info('[初始化] 管理员已存在，跳过创建');
     }
   } catch (err) {
-    console.error('[初始化失败]', err.message);
+    logger.error(`[初始化失败] ${err.message}`);
   }
 };
 

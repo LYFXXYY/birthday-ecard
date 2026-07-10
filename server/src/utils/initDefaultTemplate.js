@@ -5,6 +5,9 @@ import fsSync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Template from '../models/Template.js';
+import { getLogger } from './logger.js';
+
+const logger = getLogger('template');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,7 +94,7 @@ const initDefaultTemplate = async () => {
   try {
     dirEntries = await fs.readdir(DATA_DIR, { withFileTypes: true });
   } catch (err) {
-    console.error(`[模板] 无法读取目录 ${DATA_DIR}:`, err.message);
+    logger.error(`[模板] 无法读取目录 ${DATA_DIR}: ${err.message}`);
     return;
   }
 
@@ -103,11 +106,11 @@ const initDefaultTemplate = async () => {
         const exists = await Template.findOne({ where: { name: newName } });
         if (!exists) {
           await oldRecord.update({ name: newName });
-          console.log(`[模板] 名称迁移: ${oldName} → ${newName}`);
+          logger.info(`[模板] 名称迁移: ${oldName} → ${newName}`);
         }
       }
     } catch (err) {
-      console.warn(`[模板] 名称迁移失败: ${oldName} → ${newName}:`, err.message);
+      logger.warn(`[模板] 名称迁移失败: ${oldName} → ${newName}: ${err.message}`);
     }
   }
 
@@ -148,7 +151,7 @@ const initDefaultTemplate = async () => {
           description
         });
         updated++;
-        console.log(`[模板] 已更新(文件夹): ${name}`);
+        logger.info(`[模板] 已更新(文件夹): ${name}`);
       } else {
         await Template.create({
           name,
@@ -162,11 +165,11 @@ const initDefaultTemplate = async () => {
           html_content: null
         });
         created++;
-        console.log(`[模板] 已创建(文件夹): ${name}`);
+        logger.info(`[模板] 已创建(文件夹): ${name}`);
       }
     } catch (err) {
       failed++;
-      console.error(`[模板] ${name} 处理失败:`, err.message);
+      logger.error(`[模板] ${name} 处理失败: ${err.message}`);
     }
   }
 
@@ -195,7 +198,7 @@ const initDefaultTemplate = async () => {
           match_gender: manifestEntry?.match_gender || existing.match_gender
         });
         updated++;
-        console.log(`[模板] 已更新(HTML): ${name}`);
+        logger.info(`[模板] 已更新(HTML): ${name}`);
       } else {
         await Template.create({
           name,
@@ -205,15 +208,15 @@ const initDefaultTemplate = async () => {
           is_active: true
         });
         created++;
-        console.log(`[模板] 已创建(HTML): ${name}`);
+        logger.info(`[模板] 已创建(HTML): ${name}`);
       }
     } catch (err) {
       failed++;
-      console.error(`[模板] ${name} 处理失败:`, err.message);
+      logger.error(`[模板] ${name} 处理失败: ${err.message}`);
     }
   }
 
-  console.log(`[模板] 初始化完成 - 新建:${created} 更新:${updated} 跳过:${skipped} 失败:${failed}`);
+  logger.info(`[模板] 初始化完成 - 新建:${created} 更新:${updated} 跳过:${skipped} 失败:${failed}`);
 };
 
 export default initDefaultTemplate;

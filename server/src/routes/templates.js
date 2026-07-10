@@ -7,6 +7,9 @@ import { authMiddleware } from '../middlewares/auth.js';
 import { Template, Blessing, Employee, SendRecord } from '../models/index.js';
 import { autoAssignBlessingToTemplate, pickRandomUniversalBlessing } from '../services/autoMatch.js';
 import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('template');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -169,7 +172,7 @@ router.get('/folder-assets', async (req, res) => {
 
     success(res, assets);
   } catch (err) {
-    console.error('[folder-assets] Error:', err);
+    logger.error(`[folder-assets] Error: ${err.message}`);
     error(res, err.message, 500);
   }
 });
@@ -259,13 +262,13 @@ router.delete('/:id', async (req, res) => {
     const refCount = await Employee.count({ where: { default_template_id: req.params.id } });
     if (refCount > 0) {
       await Employee.update({ default_template_id: null }, { where: { default_template_id: req.params.id } });
-      console.log(`[模板] 已解除 ${refCount} 位员工的默认模板关联`);
+      logger.info(`[模板] 已解除 ${refCount} 位员工的默认模板关联`);
     }
 
     const recordCount = await SendRecord.count({ where: { template_id: req.params.id } });
     if (recordCount > 0) {
       await SendRecord.update({ template_id: null }, { where: { template_id: req.params.id } });
-      console.log(`[模板] 已解除 ${recordCount} 条发送记录的模板关联`);
+      logger.info(`[模板] 已解除 ${recordCount} 条发送记录的模板关联`);
     }
 
     const template = await Template.findByPk(req.params.id);

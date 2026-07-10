@@ -53,10 +53,84 @@
       </el-col>
     </el-row>
 
+    <!-- 告警信息 -->
+    <el-card v-if="extended.alerts.length > 0" shadow="hover" class="section alerts-card">
+      <template #header>
+        <span class="section-title alert-title">系统告警</span>
+      </template>
+      <div v-for="(alert, idx) in extended.alerts" :key="idx" class="alert-item">
+        <el-tag :type="alertTagType(alert.level)" size="small" effect="dark">
+          {{ alert.level === 'error' ? '严重' : alert.level === 'warning' ? '警告' : '提示' }}
+        </el-tag>
+        <span class="alert-message">{{ alert.message }}</span>
+      </div>
+    </el-card>
+    <el-card v-else shadow="hover" class="section alerts-card">
+      <template #header>
+        <span class="section-title">系统告警</span>
+      </template>
+      <div class="no-alerts">暂无告警，系统运行正常</div>
+    </el-card>
+
+    <!-- 定时任务状态 -->
+    <el-card shadow="hover" class="section">
+      <template #header>
+        <span class="section-title">定时任务</span>
+      </template>
+      <el-table :data="cronJobList" stripe size="small">
+        <el-table-column prop="name" label="任务名称" width="140" />
+        <el-table-column prop="schedule" label="调度规则" width="120" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <span class="status-dot-small" :class="cronStatusClass(row.status)"></span>
+            {{ cronStatusText(row.status) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="上次执行" width="180">
+          <template #default="{ row }">
+            {{ formatCronTime(row.last_run) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="message" label="说明" min-width="200" />
+      </el-table>
+    </el-card>
+
+    <!-- 内存使用 -->
+    <el-row :gutter="20" class="section">
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="hover" class="stat-card">
+          <el-statistic title="内存占用 (RSS)" :value="extended.memory.rss">
+            <template #suffix>MB</template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="hover" class="stat-card">
+          <el-statistic title="堆内存已用" :value="extended.memory.heapUsed">
+            <template #suffix>MB</template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="hover" class="stat-card">
+          <el-statistic title="堆内存总量" :value="extended.memory.heapTotal">
+            <template #suffix>MB</template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+      <el-col :xs="12" :sm="6">
+        <el-card shadow="hover" class="stat-card">
+          <el-statistic title="堆使用率" :value="extended.memory.usagePercent">
+            <template #suffix>%</template>
+          </el-statistic>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- 刷新状态提示 -->
     <div class="refresh-info">
       <el-tag type="info" size="small">
-        每 30 秒自动刷新 | 上次更新: {{ lastRefresh }}
+        每 3 分钟自动刷新 | 上次更新: {{ lastRefresh }}
       </el-tag>
     </div>
   </div>
@@ -64,8 +138,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { getSystemHealth, getSystemStats } from '@/api/monitor'
-import type { SystemHealth, SystemStats } from '@/api/monitor'
+import { getSystemHealth, getSystemStats, getExtendedStats } from '@/api/monitor'
+import type { SystemHealth, SystemStats, ExtendedStats, CronJob, Alert } from '@/api/monitor'
 
 // 健康状态数据
 const health = ref<SystemHealth>({
@@ -84,6 +158,13 @@ const stats = ref<SystemStats>({
 })
 
 const lastRefresh = ref('--')
+
+// 扩展监控数据
+const extended = ref<ExtendedStats>({
+  memory: { rss: 0, heapUsed: 0, heapTotal: 0, external: 0, usagePercent: 0 },
+  cron_jobs: {},
+  alerts: []
+})
 
 // 健康状态卡片配置
 const healthCards = computed(() => [
@@ -144,6 +225,49 @@ function formatTime(iso: string): string {
   }
 }
 
+function cronStatusClass(status: string): string {
+  const map: Record<string, string> = {
+    success: 'status-healthy',
+    running: 'status-running',
+    warning: 'status-warning',
+    error: 'status-unhealthy',
+    waiting: 'status-unknown'
+  }
+  return map[status] || 'status-unknown'
+}
+
+function cronStatusText(status: string): string {
+  const map: Record<string, string> = {
+    success: '正常',
+    running: '运行中',
+    warning: '警告',
+    error: '异常',
+    waiting: '等待中'
+  }
+  return map[status] || status
+}
+
+function formatCronTime(iso: string | null): string {
+  if (!iso) return '尚未执行'
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('zh-CN', { hour12: false })
+  } catch {
+    return iso
+  }
+}
+
+function alertTagType(level: string): string {
+  const map: Record<string, string> = { error: 'danger', warning: 'warning', info: 'info' }
+  return map[level] || 'info'
+}
+
+// 定时任务列表（按顺序展示）
+const cronJobList = computed(() => {
+  const jobs = extended.value.cron_jobs
+  return Object.entries(jobs).map(([key, job]) => ({ key, ...job }))
+})
+
 // 数据加载
 const fetchHealth = async () => {
   try {
@@ -163,17 +287,26 @@ const fetchStats = async () => {
   }
 }
 
+const fetchExtended = async () => {
+  try {
+    const data = await getExtendedStats()
+    extended.value = data
+  } catch {
+    // 请求拦截器已处理错误提示
+  }
+}
+
 const fetchAll = async () => {
-  await Promise.all([fetchHealth(), fetchStats()])
+  await Promise.all([fetchHealth(), fetchStats(), fetchExtended()])
   lastRefresh.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
 }
 
-// 自动刷新（30秒）
+// 自动刷新（3 分钟）
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   fetchAll()
-  refreshTimer = setInterval(fetchAll, 30000)
+  refreshTimer = setInterval(fetchAll, 180000)
 })
 
 onUnmounted(() => {
@@ -283,5 +416,85 @@ onUnmounted(() => {
 .refresh-info {
   text-align: center;
   margin-top: 16px;
+}
+
+/* 区块标题 */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.alert-title {
+  color: #E6A23C;
+}
+
+/* 告警区域 */
+.alerts-card {
+  border-left: 3px solid #E6A23C;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.alert-item:last-child {
+  border-bottom: none;
+}
+
+.alert-message {
+  font-size: 14px;
+  color: #606266;
+}
+
+.no-alerts {
+  text-align: center;
+  color: #67C23A;
+  padding: 12px 0;
+  font-size: 14px;
+}
+
+/* 定时任务状态小圆点 */
+.status-dot-small {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.status-dot-small.status-healthy {
+  background-color: #67C23A;
+  box-shadow: 0 0 4px rgba(103, 194, 58, 0.5);
+}
+
+.status-dot-small.status-running {
+  background-color: #409EFF;
+  box-shadow: 0 0 4px rgba(64, 158, 255, 0.5);
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot-small.status-warning {
+  background-color: #E6A23C;
+  box-shadow: 0 0 4px rgba(230, 162, 60, 0.5);
+}
+
+.status-dot-small.status-unhealthy {
+  background-color: #F56C6C;
+  box-shadow: 0 0 4px rgba(245, 108, 108, 0.5);
+}
+
+.status-dot-small.status-unknown {
+  background-color: #909399;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>

@@ -4,5 +4,6 @@ generated-cards/
 generated-videos/
 heartbeats/
 uploads/
+logs/
 *.log
 server/heartbeats/monitor.json

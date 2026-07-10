@@ -5,6 +5,7 @@ import Blessing from './Blessing.js';
 import SendRecord from './SendRecord.js';
 import Department from './Department.js';
 import OperationLog from './OperationLog.js';
+import SystemLog from './SystemLog.js';
 import ActiveSession from './ActiveSession.js';
 import { sequelize } from '../config/database.js';
 
@@ -54,5 +55,6 @@ export {
   SendRecord,
   Department,
   OperationLog,
+  SystemLog,
   ActiveSession
 };

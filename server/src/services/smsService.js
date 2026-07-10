@@ -4,6 +4,9 @@
 
 import axios from 'axios';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('sms');
 
 /**
  * 发送短信/彩信（主入口函数）
@@ -54,10 +57,10 @@ const _mockSend = async (phone, smsBody, employeeName) => {
 
   const messageId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   
-  console.log(`[短信模拟] 收件人: ${phone}`);
-  console.log(`[短信模拟] 员工: ${employeeName}`);
-  console.log(`[短信模拟] 短信内容: ${smsBody}`);
-  console.log(`[短信模拟] 消息ID: ${messageId}`);
+  logger.info(`[短信模拟] 收件人: ${phone}`);
+  logger.info(`[短信模拟] 员工: ${employeeName}`);
+  logger.info(`[短信模拟] 短信内容: ${smsBody}`);
+  logger.info(`[短信模拟] 消息ID: ${messageId}`);
 
   return {
     success: true,

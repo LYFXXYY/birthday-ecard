@@ -2,6 +2,9 @@ import xlsx from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import iconv from 'iconv-lite';
+import { getLogger } from './logger.js';
+
+const logger = getLogger('import');
 
 /**
  * 性别转换：将中文或各种格式转换为 male/female
@@ -69,7 +72,7 @@ export const parseEmployeeExcel = (filePath, originalName) => {
     if (content.charCodeAt(0) === 0xFEFF) {
       content = content.slice(1);
     }
-    console.log(`[导入] CSV编码检测: ${isUtf8 ? 'UTF-8' : 'GBK/GB2312'}, 去BOM: ${content.charCodeAt(0) !== 0xFEFF}`);
+    logger.info(`[导入] CSV编码检测: ${isUtf8 ? 'UTF-8' : 'GBK/GB2312'}, 去BOM: ${content.charCodeAt(0) !== 0xFEFF}`);
     workbook = xlsx.read(content, { type: 'string' });
   } else {
     // Excel 文件：xlsx/xls 内置编码处理

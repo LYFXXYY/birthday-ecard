@@ -4,6 +4,9 @@ import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { OperationLog, Admin } from '../models/index.js';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('operation');
 
 const router = Router();
 router.use(authMiddleware);
@@ -73,7 +76,7 @@ router.get('/', async (req, res) => {
       pageSize
     });
   } catch (err) {
-    console.error('[操作日志] 查询失败:', err.message);
+    logger.error(`[操作日志] 查询失败: ${err.message}`);
     return error(res, '查询操作日志失败', 500);
   }
 });
@@ -113,7 +116,7 @@ router.get('/stats', async (req, res) => {
       total_count: totalCount[0]?.count || 0
     });
   } catch (err) {
-    console.error('[操作日志] 统计失败:', err.message);
+    logger.error(`[操作日志] 统计失败: ${err.message}`);
     return error(res, '查询统计失败', 500);
   }
 });
@@ -133,7 +136,7 @@ router.delete('/cleanup', async (req, res) => {
 
     return success(res, { deleted_count: deleted }, `已清理 ${deleted} 条 ${retentionDays} 天前的日志`);
   } catch (err) {
-    console.error('[操作日志] 清理失败:', err.message);
+    logger.error(`[操作日志] 清理失败: ${err.message}`);
     return error(res, '清理日志失败', 500);
   }
 });

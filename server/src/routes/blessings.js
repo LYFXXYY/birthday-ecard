@@ -3,6 +3,9 @@ import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { Blessing, Template } from '../models/index.js';
 import { logOperation, extractLogInfo } from '../middlewares/operationLog.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('blessing');
 
 const router = Router();
 
@@ -104,7 +107,7 @@ router.delete('/:id', async (req, res) => {
     if (refCount > 0) {
       // 解除模板关联
       await Template.update({ default_blessing_id: null }, { where: { default_blessing_id: req.params.id } });
-      console.log(`[祝福语] 已解除 ${refCount} 个模板的默认祝福语关联`);
+      logger.info(`[祝福语] 已解除 ${refCount} 个模板的默认祝福语关联`);
     }
 
     // 查询祝福语内容用于操作日志

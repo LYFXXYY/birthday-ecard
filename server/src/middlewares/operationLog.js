@@ -3,11 +3,15 @@
  * 提供日志记录工具函数，在各 CRUD 路由中按需调用
  */
 import { OperationLog } from '../models/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('operation');
 
 /**
  * 记录操作日志
  * @param {object} options
  * @param {number|null} options.admin_id - 操作者 ID（从 req.user?.id 获取）
+ * @param {string} [options.operator_type='admin'] - 操作者类型：admin / system
  * @param {string} options.action - 操作类型：create / update / delete
  * @param {string} options.model - 操作模型：Employee / Template / Blessing / Department 等
  * @param {number|null} [options.model_id] - 被操作记录的 ID
@@ -15,10 +19,11 @@ import { OperationLog } from '../models/index.js';
  * @param {string} [options.ip_address] - 请求 IP
  * @param {string} [options.user_agent] - 浏览器 UA
  */
-export const logOperation = async ({ admin_id, action, model, model_id = null, details = null, ip_address = null, user_agent = null }) => {
+export const logOperation = async ({ admin_id, operator_type = 'admin', action, model, model_id = null, details = null, ip_address = null, user_agent = null }) => {
   try {
     await OperationLog.create({
       admin_id,
+      operator_type,
       action,
       model,
       model_id,
@@ -28,7 +33,7 @@ export const logOperation = async ({ admin_id, action, model, model_id = null, d
     });
   } catch (err) {
     // 日志记录失败不应影响主业务，仅打印警告
-    console.warn('[操作日志] 记录失败:', err.message);
+    logger.warn(`[操作日志] 记录失败: ${err.message}`);
   }
 };
 

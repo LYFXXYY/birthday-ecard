@@ -1,6 +1,9 @@
 import { ActiveSession } from '../models/index.js';
 import { config } from '../config/index.js';
 import { Op } from 'sequelize';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('session');
 
 /**
  * 清理过期会话
@@ -22,12 +25,12 @@ export const cleanupExpiredSessions = async () => {
     });
 
     if (deleted > 0) {
-      console.log(`[会话清理] 已清理 ${deleted} 个过期会话`);
+      logger.info(`[会话清理] 已清理 ${deleted} 个过期会话`);
     }
 
     return deleted;
   } catch (err) {
-    console.error('[会话清理] 清理失败:', err.message);
+    logger.error(`[会话清理] 清理失败: ${err.message}`);
     return 0;
   }
 };

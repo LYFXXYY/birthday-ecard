@@ -4,6 +4,9 @@ import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('card');
 
 const router = express.Router();
 
@@ -59,7 +62,7 @@ router.get('/:cardId', async (req, res) => {
 
     return res.status(404).json({ code: 404, message: '贺卡不存在', data: null });
   } catch (error) {
-    console.error('访问贺卡失败:', error.message);
+    logger.error(`访问贺卡失败: ${error.message}`);
     res.status(500).json({ code: 500, message: '访问贺卡失败', data: null });
   }
 });

@@ -11,6 +11,9 @@ import { matchTemplate } from './templateMatcher.js';
 import { generateCard } from './cardGenerator.js';
 import { sendSMS } from './smsService.js';
 import { config } from '../config/index.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('send');
 
 /**
  * 构建短信/彩信内容文本
@@ -45,13 +48,13 @@ const sendSMSWithRetry = async (phone, smsBody, employeeName) => {
 
     if (attempt < maxRetries) {
       const waitTime = Math.pow(2, attempt) * 1000;
-      console.warn(`[发送服务重试] 第 ${attempt + 1}/${maxRetries} 次重试，等待 ${waitTime}ms，原因: ${smsResult.error}`);
+      logger.warn(`[发送服务重试] 第 ${attempt + 1}/${maxRetries} 次重试，等待 ${waitTime}ms，原因: ${smsResult.error}`);
       await delay(waitTime);
     }
   }
 
   smsResult.retryCount = maxRetries;
-  console.error(`[发送服务] 短信发送已重试 ${maxRetries} 次仍然失败: ${smsResult.error}`);
+  logger.error(`[发送服务] 短信发送已重试 ${maxRetries} 次仍然失败: ${smsResult.error}`);
   return smsResult;
 };
 
@@ -76,14 +79,14 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
   });
 
   // 1. 检查员工
-  console.log(`[发送服务] 步骤 1/5 - 查找员工 (ID: ${employeeId})...`);
+  logger.info(`[发送服务] 步骤 1/5 - 查找员工 (ID: ${employeeId})...`);
   const employee = await Employee.findByPk(employeeId, {
     include: [{ model: Template, as: 'default_template', include: [{ model: Blessing, as: 'default_blessing' }] }]
   });
   if (!employee) return fail('员工不存在');
 
   const employeeName = employee.name;
-  console.log(`[发送服务] 找到员工: ${employeeName}`);
+  logger.info(`[发送服务] 找到员工: ${employeeName}`);
 
   // 防重复
   if (skipIfSentToday) {
@@ -109,21 +112,21 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
   }
 
   // 2. 匹配模板
-  console.log(`[发送服务] 步骤 2/5 - 匹配模板...`);
+  logger.info(`[发送服务] 步骤 2/5 - 匹配模板...`);
   const template = await matchTemplate(employee, preloadedTemplates);
   if (!template) return fail('没有可用的模板', { employee, employeeName });
 
   const templateName = template.name;
-  console.log(`[发送服务] 匹配到模板: ${templateName}`);
+  logger.info(`[发送服务] 匹配到模板: ${templateName}`);
   let cardResult = null;
 
   try {
     // 3. 生成贺卡 + 录制视频
-    console.log(`[发送服务] 步骤 3/5 - 生成贺卡并录制视频（此步骤耗时较长，约 2-3 分钟）...`);
+    logger.info(`[发送服务] 步骤 3/5 - 生成贺卡并录制视频（此步骤耗时较长，约 2-3 分钟）...`);
     cardResult = await generateCard(template, employee);
     const videoAttempted = cardResult.videoAttempted === true;
     const videoOk = !!cardResult.videoPath;
-    console.log(`[发送服务] 贺卡生成完成：视频${videoOk ? '已生成' : videoAttempted ? '录制失败' : '未录制（旧模板）'}`);
+    logger.info(`[发送服务] 贺卡生成完成：视频${videoOk ? '已生成' : videoAttempted ? '录制失败' : '未录制（旧模板）'}`);
 
     // 4. 创建发送记录
     const blessingText = template.default_blessing?.content || '生日快乐！愿你永远开心如意！';
@@ -146,9 +149,9 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
       }, { transaction: t });
 
       // 5. 发送短信/彩信（视频失败时仍发送贺卡链接作为兜底）
-      console.log(`[发送服务] 步骤 5/5 - 发送短信到 ${employee.phone}...`);
+      logger.info(`[发送服务] 步骤 5/5 - 发送短信到 ${employee.phone}...`);
       const smsResult = await sendSMSWithRetry(employee.phone, smsBody, employeeName);
-      console.log(`[发送服务] 短信发送结果: ${smsResult.success ? '成功' : '失败 - ' + smsResult.error}`);
+      logger.info(`[发送服务] 短信发送结果: ${smsResult.success ? '成功' : '失败 - ' + smsResult.error}`);
 
       // 6. 更新状态：视频录制失败时整体为 failed，否则取决于短信结果
       let finalStatus;

@@ -9,7 +9,10 @@
 import express from 'express';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
-import { getSystemHealth, getSystemStats } from '../services/monitorService.js';
+import { getSystemHealth, getSystemStats, getMemoryUsage, getCronStatus, getAlerts } from '../services/monitorService.js';
+import { getLogger } from '../utils/logger.js';
+
+const logger = getLogger('monitor');
 
 const router = express.Router();
 
@@ -24,7 +27,7 @@ router.get('/status', async (req, res) => {
     const health = await getSystemHealth();
     success(res, health, '获取系统状态成功');
   } catch (err) {
-    console.error('[监控] 获取系统状态失败:', err.message);
+    logger.error(`[监控] 获取系统状态失败: ${err.message}`);
     error(res, '获取系统状态失败', 500);
   }
 });
@@ -37,8 +40,25 @@ router.get('/stats', async (req, res) => {
     const stats = await getSystemStats();
     success(res, stats, '获取统计数据成功');
   } catch (err) {
-    console.error('[监控] 获取统计数据失败:', err.message);
+    logger.error(`[监控] 获取统计数据失败: ${err.message}`);
     error(res, '获取统计数据失败', 500);
+  }
+});
+
+/**
+ * GET /extended - 获取扩展监控数据（内存、定时任务、告警）
+ */
+router.get('/extended', async (req, res) => {
+  try {
+    const [memory, cron_jobs, alerts] = await Promise.all([
+      getMemoryUsage(),
+      getCronStatus(),
+      getAlerts()
+    ]);
+    success(res, { memory, cron_jobs, alerts }, '获取扩展监控数据成功');
+  } catch (err) {
+    logger.error(`[监控] 获取扩展监控数据失败: ${err.message}`);
+    error(res, '获取扩展监控数据失败', 500);
   }
 });
 
