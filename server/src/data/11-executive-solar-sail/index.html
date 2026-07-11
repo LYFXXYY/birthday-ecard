@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>高管生日贺卡·日光帆影会所版</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card-app solar-sail-app" aria-live="polite">
+    <canvas id="fxCanvas" aria-hidden="true"></canvas>
+
+    <button class="music-toggle is-paused" type="button" aria-label="音乐开关">
+      <span class="music-mark" aria-hidden="true"></span>
+    </button>
+
+    <div class="brand-slot">
+        <img class="brand-logo" src="../logo.svg" alt="信阳移动"
+             onerror="this.style.display='none'; this.nextElementSibling && (this.nextElementSibling.style.display='block')">
+        <span class="brand-text" style="display:none">信阳移动</span>
+      </div>
+
+    <section class="screen cover active" data-screen="cover">
+      <img class="scene-bg" src="assets/generated/01-cover-bg.png" alt="" loading="eager">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">01 / 07</p>
+      <div class="copy-block copy-cover">
+        <p class="eyebrow">Solar Sail</p>
+        <h1>生日快乐</h1>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">向明亮的航程，致以郑重而从容的祝福。</p>
+      </div>
+    </section>
+
+    <section class="screen name" data-screen="name">
+      <img class="scene-bg" src="assets/generated/02-name-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">02 / 07</p>
+      <div class="copy-block copy-name">
+        <p class="eyebrow">Dedicated To</p>
+        <h2>{{name}}</h2>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">愿今日的日光与海面，映照属于你的从容风度。</p>
+      </div>
+    </section>
+
+    <section class="screen imprint" data-screen="imprint">
+      <img class="scene-bg" src="assets/generated/03-imprint-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">03 / 07</p>
+      <div class="copy-block copy-imprint">
+        <p class="eyebrow">Year Imprint</p>
+        <h3>方向、节奏与担当</h3>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">那些校准航向的判断，那些稳住节奏的坚持，都让前路更清晰。</p>
+      </div>
+    </section>
+
+    <section class="screen compass" data-screen="compass">
+      <img class="scene-bg" src="assets/generated/04-compass-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">04 / 07</p>
+      <div class="copy-block copy-compass">
+        <p class="eyebrow">Steady Course</p>
+        <h3>愿远航始终有清晰航线</h3>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">愿新的一岁，既能看见远方，也能稳稳抵达每一个关键节点。</p>
+      </div>
+    </section>
+
+    <section class="screen wish" data-screen="wish">
+      <img class="scene-bg" src="assets/generated/05-wish-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">05 / 07</p>
+      <div class="copy-block copy-wish">
+        <p class="eyebrow">Life With Light</p>
+        <h3>愿生活有风，也有安稳港湾</h3>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">愿健康、热望与好心情，与事业每一次展开并肩同行。</p>
+      </div>
+    </section>
+
+    <section class="screen message" data-screen="message">
+      <img class="scene-bg" src="assets/generated/06-message-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">06 / 07</p>
+      <div class="copy-block copy-message">
+        <p class="eyebrow">Personal Message</p>
+        <h3>写给你的生日祝福</h3>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="message-text">{{message}}</p>
+      </div>
+    </section>
+
+    <section class="screen final" data-screen="final">
+      <img class="scene-bg" src="assets/generated/07-final-bg.png" alt="" loading="lazy">
+      <div class="scene-overlay" aria-hidden="true"></div>
+      <p class="page-index">07 / 07</p>
+      <div class="copy-block copy-final">
+        <p class="eyebrow">Bright Voyage</p>
+        <h2>生日快乐</h2>
+        <span class="rule-line" aria-hidden="true"></span>
+        <p class="lead">愿新的年岁，开阔、明亮，也拥有更多顺风与抵达。</p>
+        <p class="sig-company" style="font-size:clamp(22px,6.5vw,32px);font-weight:700;color:currentColor;letter-spacing:2px;margin-top:18px">信阳移动公司工会 敬贺</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
