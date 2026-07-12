@@ -18,16 +18,6 @@
         style="width: 100%"
       >
         <el-table-column prop="content" label="祝福内容" min-width="320" />
-        <el-table-column prop="match_gender" label="性别" width="100">
-          <template #default="{ row }">
-            {{ getGenderText(row.match_gender) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="年龄范围" width="140">
-          <template #default="{ row }">
-            {{ formatAgeRange(row.match_age_min, row.match_age_max) }}
-          </template>
-        </el-table-column>
         <el-table-column label="适用职级" width="120">
           <template #default="{ row }">
             {{ getLevelText(row.match_employee_level) }}
@@ -73,30 +63,14 @@ const router = useRouter()
 const blessings = ref<Blessing[]>([])
 const loading = ref(false)
 
-const getGenderText = (gender?: string) => {
-  const map: Record<string, string> = {
-    male: '男性',
-    female: '女性',
-    all: '不限'
-  }
-  return map[gender || 'all'] || '不限'
-}
-
 const getLevelText = (level?: string | null) => {
   const map: Record<string, string> = {
     management: '管理层',
-    manager: '经理',
-    employee: '员工',
+    manager: '三级经理',
+    employee: '普通员工',
     all: '通用'
   }
   return map[level || 'all'] || '通用'
-}
-
-const formatAgeRange = (min?: number | null, max?: number | null) => {
-  if (min == null && max == null) {
-    return '不限'
-  }
-  return `${min ?? '-'} - ${max ?? '-'} 岁`
 }
 
 const loadBlessings = async () => {

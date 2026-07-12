@@ -59,16 +59,16 @@
         <el-form-item label="适用职级" prop="employee_level">
           <el-select v-model="formData.employee_level" placeholder="请选择适用职级" style="width: 200px">
             <el-option label="管理层" value="management" />
-            <el-option label="经理" value="manager" />
-            <el-option label="员工" value="employee" />
+            <el-option label="三级经理" value="manager" />
+            <el-option label="普通员工" value="employee" />
             <el-option label="通用（所有职级）" value="all" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="模板页数" prop="page_count">
           <el-select v-model="formData.page_count" placeholder="请选择页数" style="width: 200px">
-            <el-option label="4 页（员工）" :value="4" />
-            <el-option label="7 页（管理层/经理）" :value="7" />
+            <el-option label="4 页（普通员工）" :value="4" />
+            <el-option label="7 页（管理层/三级经理）" :value="7" />
           </el-select>
         </el-form-item>
 

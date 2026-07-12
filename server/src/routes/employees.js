@@ -165,6 +165,31 @@ router.get('/today-birthday', async (req, res) => {
   }
 });
 
+// GET /api/employees/tomorrow-birthday - 获取明天生日的员工
+router.get('/tomorrow-birthday', async (req, res) => {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const month = tomorrow.getMonth() + 1;
+    const day = tomorrow.getDate();
+
+    const employees = await Employee.findAll({
+      where: {
+        is_active: true,
+        [Op.and]: [
+          sequelize.where(sequelize.fn('MONTH', sequelize.col('birthday')), month),
+          sequelize.where(sequelize.fn('DAY', sequelize.col('birthday')), day)
+        ]
+      },
+      attributes: ['id', 'name', 'department', 'phone', 'birthday']
+    });
+
+    success(res, employees);
+  } catch (err) {
+    error(res, err.message);
+  }
+});
+
 // GET /api/employees/:id - 获取单个员工详情
 router.get('/:id', async (req, res) => {
   try {

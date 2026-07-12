@@ -21,6 +21,7 @@ import departmentRoutes from './routes/departments.js';
 import operationLogRoutes from './routes/operationLogs.js';
 import monitorRoutes from './routes/monitor.js';
 import systemLogRoutes from './routes/systemLogs.js';
+import smsCallbackRoutes from './routes/smsCallback.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
 import { initTestEmployees } from './utils/initTestEmployees.js';
@@ -58,6 +59,9 @@ app.use('/uploads', express.static(path.join(__dirname, '..', '..', 'uploads')))
 app.get('/api/health', (req, res) => {
   res.json({ code: 200, message: 'OK', data: { status: 'healthy', timestamp: new Date() } });
 });
+
+// CSP 短信投递状态回调（公开端点，供运营商服务器调用，XML 请求体）
+app.use('/api/sms-callback', express.text({ type: ['text/xml', 'application/xml'] }), smsCallbackRoutes);
 
 // API路由
 app.use('/api/auth', authRoutes);

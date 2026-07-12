@@ -13,6 +13,9 @@ export interface SendRecord {
   send_time?: string
   error_message?: string | null
   sms_content?: string | null
+  // 移动公司投递状态（由 CSP 异步回调写入，目前暂无数据）
+  delivery_status?: string | null
+  delivery_time?: string | null
   created_at?: string
   employee?: {
     name: string

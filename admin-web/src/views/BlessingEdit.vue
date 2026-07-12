@@ -31,8 +31,8 @@
           <el-select v-model="formData.match_employee_level" placeholder="请选择适用职级" style="width: 200px">
             <el-option label="通用（所有职级）" value="all" />
             <el-option label="管理层" value="management" />
-            <el-option label="经理" value="manager" />
-            <el-option label="员工" value="employee" />
+            <el-option label="三级经理" value="manager" />
+            <el-option label="普通员工" value="employee" />
           </el-select>
         </el-form-item>
 

@@ -1,13 +1,5 @@
 <template>
   <div class="dashboard-container">
-    <!-- 顶部欢迎区域 -->
-    <div class="welcome-section">
-      <div class="welcome-text-area">
-        <h2>欢迎使用生日贺卡管理系统</h2>
-        <p class="welcome-date">今天是 {{ currentDate }}</p>
-      </div>
-    </div>
-
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card" style="--card-accent: var(--primary-color)">
@@ -30,17 +22,17 @@
         </div>
       </div>
 
-      <div class="stat-card" style="--card-accent: #67C23A">
+      <div class="stat-card" style="--card-accent: var(--secondary-color)">
         <div class="stat-icon-wrap">
-          <el-icon :size="28"><CircleCheck /></el-icon>
+          <el-icon :size="28"><Calendar /></el-icon>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.successRate }}%</div>
-          <div class="stat-label">发送成功率</div>
+          <div class="stat-value">{{ stats.tomorrowBirthdays }}</div>
+          <div class="stat-label">明日生日</div>
         </div>
       </div>
 
-      <div class="stat-card" style="--card-accent: var(--secondary-color)">
+      <div class="stat-card" style="--card-accent: #67C23A">
         <div class="stat-icon-wrap">
           <el-icon :size="28"><Message /></el-icon>
         </div>
@@ -90,6 +82,70 @@
       </div>
     </el-card>
 
+    <!-- 系统监控面板 -->
+    <el-card class="monitor-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>系统监控</span>
+          <el-tag type="info" size="small">
+            上次更新: {{ monitorLastRefresh }}
+          </el-tag>
+        </div>
+      </template>
+
+      <!-- 健康状态 -->
+      <el-row :gutter="16" class="monitor-section">
+        <el-col :xs="12" :sm="6" v-for="item in healthCards" :key="item.key">
+          <div class="health-mini-card">
+            <div class="health-indicator">
+              <span class="status-dot" :class="item.statusClass"></span>
+              <span class="health-label">{{ item.label }}</span>
+            </div>
+            <div class="health-status-text" :class="item.statusClass">{{ item.value }}</div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <!-- 内存与发送统计 -->
+      <el-row :gutter="16" class="monitor-section">
+        <el-col :xs="12" :sm="6">
+          <div class="mini-stat">
+            <div class="mini-stat-value">{{ monitorStats.send_stats.total }}</div>
+            <div class="mini-stat-label">总发送量</div>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="6">
+          <div class="mini-stat">
+            <div class="mini-stat-value">{{ monitorStats.send_stats.success_rate }}<span class="mini-stat-unit">%</span></div>
+            <div class="mini-stat-label">成功率</div>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="6">
+          <div class="mini-stat">
+            <div class="mini-stat-value">{{ extendedStats.memory.rss }}<span class="mini-stat-unit">MB</span></div>
+            <div class="mini-stat-label">内存占用</div>
+          </div>
+        </el-col>
+        <el-col :xs="12" :sm="6">
+          <div class="mini-stat">
+            <div class="mini-stat-value">{{ extendedStats.memory.usagePercent }}<span class="mini-stat-unit">%</span></div>
+            <div class="mini-stat-label">堆使用率</div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <!-- 告警 -->
+      <div v-if="extendedStats.alerts.length > 0" class="alerts-section">
+        <div v-for="(alert, idx) in extendedStats.alerts" :key="idx" class="alert-item">
+          <el-tag :type="alertTagType(alert.level)" size="small" effect="dark">
+            {{ alert.level === 'error' ? '严重' : alert.level === 'warning' ? '警告' : '提示' }}
+          </el-tag>
+          <span class="alert-message">{{ alert.message }}</span>
+        </div>
+      </div>
+      <div v-else class="no-alerts">暂无告警，系统运行正常</div>
+    </el-card>
+
     <!-- 图表区域 -->
     <el-card class="chart-card" shadow="hover">
       <template #header>
@@ -101,25 +157,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { User, Star, CircleCheck, Message, Refresh } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { User, Star, Calendar, Message, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
-import { getTodayBirthdayEmployees, getEmployeeList } from '@/api/employees'
+import { getTodayBirthdayEmployees, getTomorrowBirthdayEmployees, getEmployeeList } from '@/api/employees'
 import { getRecordStats, getMonthlyStats, getRecordList, testSend } from '@/api/records'
+import { getSystemHealth, getSystemStats, getExtendedStats } from '@/api/monitor'
 import type { Employee } from '@/api/employees'
-
-// 当前日期
-const currentDate = computed(() => {
-  const date = new Date()
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
-})
+import type { SystemHealth, SystemStats, ExtendedStats } from '@/api/monitor'
 
 // 统计数据
-const stats = ref({
+const stats = reactive({
   totalEmployees: 0,
   todayBirthdays: 0,
-  successRate: 0,
+  tomorrowBirthdays: 0,
   totalSent: 0
 })
 
@@ -141,6 +193,86 @@ const BRAND_COLORS = {
   success: '#67C23A',
   warning: '#E6A23C',
   danger: '#F56C6C'
+}
+
+// ===== 监控数据 =====
+const health = ref<SystemHealth>({
+  sender_service: 'unknown',
+  monitor_service: 'unknown',
+  database: 'unknown',
+  last_heartbeat: ''
+})
+
+const monitorStats = ref<SystemStats>({
+  send_stats: { total: 0, success: 0, failed: 0, success_rate: 0 },
+  template_usage: [],
+  today_count: 0,
+  level_stats: []
+})
+
+const extendedStats = ref<ExtendedStats>({
+  memory: { rss: 0, heapUsed: 0, heapTotal: 0, external: 0, usagePercent: 0 },
+  cron_jobs: {},
+  alerts: []
+})
+
+const monitorLastRefresh = ref('--')
+
+// 健康状态卡片
+const healthCards = computed(() => [
+  {
+    key: 'sender',
+    label: '发送服务',
+    value: statusLabel(health.value.sender_service),
+    statusClass: statusClass(health.value.sender_service)
+  },
+  {
+    key: 'monitor',
+    label: '监控服务',
+    value: statusLabel(health.value.monitor_service),
+    statusClass: statusClass(health.value.monitor_service)
+  },
+  {
+    key: 'database',
+    label: '数据库',
+    value: statusLabel(health.value.database),
+    statusClass: health.value.database === 'connected' ? 'status-healthy' : 'status-unhealthy'
+  },
+  {
+    key: 'heartbeat',
+    label: '最后心跳',
+    value: health.value.last_heartbeat ? formatTime(health.value.last_heartbeat) : '暂无',
+    statusClass: health.value.last_heartbeat ? 'status-healthy' : 'status-unhealthy'
+  }
+])
+
+// 监控辅助函数
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    healthy: '正常', unhealthy: '异常',
+    connected: '已连接', disconnected: '未连接', unknown: '未知'
+  }
+  return map[status] || status
+}
+
+function statusClass(status: string): string {
+  if (status === 'healthy' || status === 'connected') return 'status-healthy'
+  if (status === 'unhealthy' || status === 'disconnected') return 'status-unhealthy'
+  return 'status-unknown'
+}
+
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString('zh-CN', { hour12: false })
+  } catch {
+    return iso
+  }
+}
+
+function alertTagType(level: string): string {
+  const map: Record<string, string> = { error: 'danger', warning: 'warning', info: 'info' }
+  return map[level] || 'info'
 }
 
 // 初始化月度趋势图
@@ -215,16 +347,14 @@ const handleResize = () => {
 // 加载数据
 const loadData = async () => {
   try {
-    // 并行获取所有数据
     const [recordStats, empList, monthlyData] = await Promise.all([
       getRecordStats(),
       getEmployeeList({ page: 1, pageSize: 1 }),
       getMonthlyStats()
     ])
 
-    stats.value.successRate = recordStats.success_rate || 0
-    stats.value.totalSent = recordStats.total || 0
-    stats.value.totalEmployees = empList.total || 0
+    stats.totalSent = recordStats.total || 0
+    stats.totalEmployees = empList.total || 0
 
     // 获取今日已发送记录
     try {
@@ -242,19 +372,33 @@ const loadData = async () => {
       console.error('[仪表盘] 查询今日发送记录失败:', e)
     }
 
-    // 获取今日生日员工
-    await refreshBirthdays()
+    // 获取今日 + 明日生日员工
+    await Promise.all([refreshBirthdays(), refreshTomorrowBirthdays()])
 
     // 渲染图表
     await nextTick()
-
-    // 月度趋势
     if (monthlyData.monthly.length > 0) {
       initMonthlyChart(monthlyData.monthly)
     }
   } catch (error) {
     console.error('加载数据失败：', error)
-    stats.value = { totalEmployees: 0, todayBirthdays: 0, successRate: 0, totalSent: 0 }
+  }
+}
+
+// 加载监控数据
+const loadMonitorData = async () => {
+  try {
+    const [healthData, statsData, extendedData] = await Promise.all([
+      getSystemHealth(),
+      getSystemStats(),
+      getExtendedStats()
+    ])
+    health.value = healthData
+    monitorStats.value = statsData
+    extendedStats.value = extendedData
+    monitorLastRefresh.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+  } catch (e) {
+    console.error('[仪表盘] 加载监控数据失败:', e)
   }
 }
 
@@ -262,11 +406,22 @@ const loadData = async () => {
 const refreshBirthdays = async () => {
   try {
     todayBirthdays.value = await getTodayBirthdayEmployees()
-    stats.value.todayBirthdays = todayBirthdays.value.length
+    stats.todayBirthdays = todayBirthdays.value.length
   } catch (error) {
     console.error('获取今日生日员工失败：', error)
     todayBirthdays.value = []
-    stats.value.todayBirthdays = 0
+    stats.todayBirthdays = 0
+  }
+}
+
+// 刷新生日列表
+const refreshTomorrowBirthdays = async () => {
+  try {
+    const list = await getTomorrowBirthdayEmployees()
+    stats.tomorrowBirthdays = list.length
+  } catch (error) {
+    console.error('获取明日生日员工失败：', error)
+    stats.tomorrowBirthdays = 0
   }
 }
 
@@ -276,7 +431,6 @@ const handleTestSend = async (employeeId: number) => {
   sendingId.value = employeeId
   sendProgress.value = 0
 
-  // 模拟进度：每 3 秒增长一点，最高到 95%
   const progressTimer = setInterval(() => {
     if (sendProgress.value < 95) {
       sendProgress.value = Math.min(sendProgress.value + Math.floor(Math.random() * 3) + 1, 95)
@@ -295,7 +449,6 @@ const handleTestSend = async (employeeId: number) => {
     clearInterval(progressTimer)
     ElMessage.error('测试发送失败')
   } finally {
-    // 短暂展示 100% 后重置
     setTimeout(() => {
       sendingId.value = null
       sendProgress.value = 0
@@ -303,14 +456,22 @@ const handleTestSend = async (employeeId: number) => {
   }
 }
 
+// 监控自动刷新（3 分钟）
+let monitorTimer: ReturnType<typeof setInterval> | null = null
+
 onMounted(async () => {
-  await loadData()
+  await Promise.all([loadData(), loadMonitorData()])
+  monitorTimer = setInterval(loadMonitorData, 180000)
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   monthlyChart?.dispose()
+  if (monitorTimer) {
+    clearInterval(monitorTimer)
+    monitorTimer = null
+  }
 })
 </script>
 
@@ -319,27 +480,6 @@ onUnmounted(() => {
   padding: 0;
   max-width: 1440px;
   margin: 0 auto;
-}
-
-.welcome-section {
-  margin-bottom: 24px;
-  padding: 24px 28px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  border-radius: 12px;
-  color: #fff;
-}
-
-.welcome-section h2 {
-  margin: 0 0 6px 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.welcome-date {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
 }
 
 /* 统计卡片 */
@@ -390,23 +530,6 @@ onUnmounted(() => {
   font-size: 13px;
   color: var(--text-secondary);
   margin-top: 2px;
-}
-
-/* 图表区域 */
-.chart-card {
-  border-radius: 12px;
-  margin-bottom: 24px;
-}
-
-.chart-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.chart-container {
-  width: 100%;
-  height: 280px;
 }
 
 /* 生日卡片 */
@@ -471,19 +594,167 @@ onUnmounted(() => {
   transition: width 0.5s ease;
 }
 
+/* 监控面板 */
+.monitor-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+.monitor-section {
+  margin-bottom: 16px;
+}
+
+.monitor-section:last-child {
+  margin-bottom: 0;
+}
+
+.health-mini-card {
+  padding: 12px 16px;
+  background: var(--bg-color);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.health-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot.status-healthy {
+  background-color: #67C23A;
+  box-shadow: 0 0 4px rgba(103, 194, 58, 0.5);
+}
+
+.status-dot.status-unhealthy {
+  background-color: #F56C6C;
+  box-shadow: 0 0 4px rgba(245, 108, 108, 0.5);
+}
+
+.status-dot.status-unknown {
+  background-color: #909399;
+}
+
+.health-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.health-status-text {
+  font-size: 15px;
+  font-weight: 600;
+  padding-left: 16px;
+}
+
+.health-status-text.status-healthy {
+  color: #67C23A;
+}
+
+.health-status-text.status-unhealthy {
+  color: #F56C6C;
+}
+
+.health-status-text.status-unknown {
+  color: #909399;
+}
+
+.mini-stat {
+  text-align: center;
+  padding: 12px;
+  background: var(--bg-color);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.mini-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.mini-stat-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+.mini-stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* 告警 */
+.alerts-section {
+  padding: 12px 16px;
+  background: #fdf6ec;
+  border-radius: 8px;
+  border-left: 3px solid #E6A23C;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(230, 162, 60, 0.15);
+}
+
+.alert-item:last-child {
+  border-bottom: none;
+}
+
+.alert-message {
+  font-size: 13px;
+  color: #606266;
+}
+
+.no-alerts {
+  text-align: center;
+  color: #67C23A;
+  padding: 12px 0;
+  font-size: 13px;
+}
+
+/* 图表区域 */
+.chart-card {
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chart-container {
+  width: 100%;
+  height: 280px;
+}
+
+/* 卡片头部通用 */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 0;
-  }
-
-  .welcome-section {
-    padding: 16px 20px;
-    border-radius: 8px;
-  }
-
-  .welcome-section h2 {
-    font-size: 18px;
   }
 
   .stats-grid {

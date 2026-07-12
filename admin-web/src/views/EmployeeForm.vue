@@ -60,8 +60,8 @@
         <el-form-item label="职级" prop="level">
           <el-select v-model="formData.level" placeholder="选择职级" clearable style="width: 100%">
             <el-option label="管理层" value="management" />
-            <el-option label="经理" value="manager" />
-            <el-option label="员工" value="employee" />
+            <el-option label="三级经理" value="manager" />
+            <el-option label="普通员工" value="employee" />
           </el-select>
         </el-form-item>
 

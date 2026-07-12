@@ -5,6 +5,10 @@
       <template #header>
         <div class="card-header">
           <span class="title">贺卡模板管理</span>
+          <el-button type="success" size="small" @click="handleBackfillBlessings">
+            <el-icon><Connection /></el-icon>
+            一键补配祝福语
+          </el-button>
         </div>
       </template>
 
@@ -65,9 +69,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Delete } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete, Connection } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTemplateList, deleteTemplate } from '@/api/templates'
+import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
@@ -133,6 +137,29 @@ const handleDelete = async (template: Template) => {
     if (error !== 'cancel') {
       console.error('删除失败：', error)
       ElMessage.error('删除失败')
+    }
+  }
+}
+
+// 一键补配祝福语
+const handleBackfillBlessings = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '将为所有未分配祝福语的模板自动匹配祝福语，是否继续？',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    const res = await backfillBlessings()
+    ElMessage.success(res.message || `已为 ${res.updated || 0} 个模板补配祝福语`)
+    loadTemplates()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('补配祝福语失败：', error)
+      ElMessage.error('补配祝福语失败')
     }
   }
 }

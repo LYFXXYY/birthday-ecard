@@ -41,7 +41,7 @@
       <!-- 筛选表单 -->
       <el-form :model="searchForm" inline class="search-form">
         <el-form-item label="发送状态">
-          <el-select v-model="searchForm.status" placeholder="全部" clearable>
+          <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 160px">
             <el-option label="成功" value="success" />
             <el-option label="失败" value="failed" />
             <el-option label="待发送" value="pending" />
@@ -119,6 +119,19 @@
         <el-table-column label="发送时间" width="170">
           <template #default="{ row }">
             {{ formatDateTime(row.send_time) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="投递状态" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.delivery_status" :type="getDeliveryType(row.delivery_status)" size="small">
+              {{ getDeliveryText(row.delivery_status) }}
+            </el-tag>
+            <span v-else class="text-muted">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="投递时间" width="170">
+          <template #default="{ row }">
+            {{ formatDateTime(row.delivery_time) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="260" fixed="right">
@@ -260,10 +273,10 @@ const formatDateTime = (value: string | Date | null) => {
 const getLevelText = (level?: string) => {
   const map: Record<string, string> = {
     management: '管理层',
-    manager: '经理',
-    employee: '员工'
+    manager: '三级经理',
+    employee: '普通员工'
   }
-  return map[level || ''] || '员工'
+  return map[level || ''] || '普通员工'
 }
 
 // 职级标签颜色
@@ -300,6 +313,38 @@ const getStatusText = (status: string) => {
     sending: '发送中'
   }
   return textMap[status] || status
+}
+
+// 投递状态标签颜色
+const getDeliveryType = (status: string) => {
+  const map: Record<string, any> = {
+    Delivered: 'success',
+    delivered: 'success',
+    Failed: 'danger',
+    failed: 'danger',
+    Rejected: 'danger',
+    rejected: 'danger',
+    Pending: 'warning',
+    pending: 'warning'
+  }
+  return map[status] || 'info'
+}
+
+// 投递状态中文
+const getDeliveryText = (status: string) => {
+  const map: Record<string, string> = {
+    Delivered: '已送达',
+    delivered: '已送达',
+    Failed: '投递失败',
+    failed: '投递失败',
+    Rejected: '已拒绝',
+    rejected: '已拒绝',
+    Pending: '投递中',
+    pending: '投递中',
+    Expired: '已过期',
+    expired: '已过期'
+  }
+  return map[status] || status
 }
 
 // 加载统计数据
@@ -541,6 +586,11 @@ onMounted(() => {
 .error-text {
   color: #f56c6c;
   cursor: pointer;
+}
+
+.text-muted {
+  color: #c0c4cc;
+  font-size: 13px;
 }
 
 /* 短信内容样式 */
