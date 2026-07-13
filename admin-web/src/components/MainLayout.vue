@@ -89,11 +89,6 @@
             <el-icon><Monitor /></el-icon>
             <span>系统日志</span>
           </el-menu-item>
-
-          <el-menu-item index="/system-stats">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>系统监控</span>
-          </el-menu-item>
         </el-menu>
       </nav>
     </header>
@@ -155,7 +150,6 @@ import {
   Document,
   Notebook,
   Monitor,
-  DataAnalysis,
   ArrowDown
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'

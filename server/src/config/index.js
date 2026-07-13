@@ -13,8 +13,8 @@ if (nodeEnv === 'production' && jwtSecret === 'default_secret_change_in_producti
   logger.error('[安全警告] 请在 .env 文件中设置 JWT_SECRET 为一个至少32字符的随机字符串');
 }
 
-if (smsProvider === 'carrier' && !process.env.SMS_API_KEY) {
-  logger.warn('[短信警告] SMS_PROVIDER=carrier 但 SMS_API_KEY 未配置，发送将失败！');
+if (smsProvider === 'carrier' && (!process.env.CSP_APP_ID || !process.env.CSP_PASSWORD)) {
+  logger.warn('[短信警告] SMS_PROVIDER=carrier 但 CSP_APP_ID/CSP_PASSWORD 未配置，发送将失败！');
 }
 
 export const config = {

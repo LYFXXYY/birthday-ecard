@@ -89,6 +89,17 @@ const SendRecord = sequelize.define('SendRecord', {
   blessing_content: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  // --- 移动公司投递状态字段（由 CSP 异步回调写入） ---
+  // delivery_status: 投递状态（pending/success/failed/timeout），移动公司发送服务返回
+  // delivery_time: 运营商确认收到的时间
+  delivery_status: {
+    type: DataTypes.STRING(20),
+    allowNull: true
+  },
+  delivery_time: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   tableName: 'send_records',

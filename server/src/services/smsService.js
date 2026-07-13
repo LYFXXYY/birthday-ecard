@@ -1,38 +1,38 @@
 // 短信/彩信发送服务
-// 支持两种模式：mock（模拟发送，开发环境默认）和 carrier（对接运营商API）
-// 切换到真实运营商只需修改 .env 中的 SMS_PROVIDER 和相关认证参数
+// 支持两种模式：mock（模拟发送，开发环境）和 carrier（中国移动 CSP V2.4.3）
 
 import axios from 'axios';
 import { config } from '../config/index.js';
+import { cspConfig, buildCspAuth } from '../config/carrier-sms.config.js';
 import { getLogger } from '../utils/logger.js';
 
 const logger = getLogger('sms');
 
 /**
  * 发送短信/彩信（主入口函数）
- * 
- * 根据 SMS_PROVIDER 配置自动选择发送模式，内置重试机制。
- * 该函数永远不会抛出异常，所有错误都通过返回值中的 success/error 字段体现。
- * 
+ *
  * @param {string} phone - 接收方手机号
- * @param {string} smsBody - 完整短信内容文本（由 sendService.buildSmsBody 构建）
+ * @param {string} smsBody - 完整短信内容文本
  * @param {string} employeeName - 员工姓名（用于日志）
+ * @param {object} [options] - 可选参数
+ * @param {string} [options.videoPath] - 视频文件绝对路径（用于 5G 视频彩信）
+ * @param {string} [options.cardUrl] - 贺卡链接
  * @returns {Promise<{
- *   success: boolean,      // 是否发送成功
- *   messageId: string|null,// 运营商返回的消息ID（mock模式为模拟ID）
- *   provider: string,      // 使用的发送模式：'mock' 或 'carrier'
- *   retryCount: number,    // 实际重试次数
- *   error: string|null,    // 失败时的错误信息
- *   sentAt: Date           // 发送时间
+ *   success: boolean,
+ *   messageId: string|null,
+ *   provider: string,
+ *   retryCount: number,
+ *   error: string|null,
+ *   sentAt: Date
  * }>}
  */
-export const sendSMS = async (phone, smsBody, employeeName) => {
+export const sendSMS = async (phone, smsBody, employeeName, options = {}) => {
   const provider = config.sms.provider;
   const sentAt = new Date();
 
   try {
     if (provider === 'carrier') {
-      return await _carrierSend(phone, smsBody, employeeName);
+      return await _carrierSend(phone, smsBody, employeeName, options);
     } else {
       return await _mockSend(phone, smsBody, employeeName);
     }
@@ -49,14 +49,13 @@ export const sendSMS = async (phone, smsBody, employeeName) => {
 };
 
 /**
- * 模拟短信发送 - 仅在控制台输出日志，不实际发送短信
- * 开发阶段使用此模式验证流程是否正常
+ * 模拟短信发送 - 仅在控制台输出日志
  */
 const _mockSend = async (phone, smsBody, employeeName) => {
   await new Promise(resolve => setTimeout(resolve, 100));
 
   const messageId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  
+
   logger.info(`[短信模拟] 收件人: ${phone}`);
   logger.info(`[短信模拟] 员工: ${employeeName}`);
   logger.info(`[短信模拟] 短信内容: ${smsBody}`);
@@ -73,53 +72,123 @@ const _mockSend = async (phone, smsBody, employeeName) => {
 };
 
 /**
- * 通过运营商API发送短信/彩信
- * 
- * 注意：当前为骨架实现，拿到运营商API文档后需要补充：
- * 1. 具体的请求URL路径
- * 2. 请求头格式（认证方式：Bearer Token / API Key / 签名等）
- * 3. 请求体格式（手机号、内容的字段名）
- * 4. 响应解析逻辑（成功/失败的判断条件和消息ID提取）
+ * 中国移动 CSP 北向接口 V2.4.3 - 5G 视频短信发送
+ *
+ * 协议要点：
+ * - 认证：Basic BASE64(appid:SHA256(SHA256(password)+GMT))
+ * - 请求体：XML 格式（非 JSON）
+ * - 视频 < 2M 时使用 mmsBodyText 字段内嵌
+ * - 单次请求最多 100 个手机号
  */
-const _carrierSend = async (phone, smsBody, employeeName) => {
-  const { apiUrl, apiKey, senderId, timeout } = config.sms;
-
-  if (!apiUrl) {
-    throw new Error('SMS_API_URL 未配置，无法调用运营商接口');
+const _carrierSend = async (phone, smsBody, employeeName, options = {}) => {
+  if (!cspConfig.appid || !cspConfig.password) {
+    throw new Error('CSP 认证参数未配置（CSP_APP_ID / CSP_PASSWORD）');
   }
 
-  // TODO: 根据运营商文档调整请求格式
-  const response = await axios.post(apiUrl, {
-    phone_number: phone,
-    content: smsBody,
-    sender_id: senderId,
-    type: 'sms'
-  }, {
-    headers: {
-      'Content-Type': 'application/json',
-      // TODO: 根据运营商文档调整认证方式
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    timeout,
+  const { authorization, gmt } = await buildCspAuth();
+  const sendUrl = `${cspConfig.serverRoot}${cspConfig.sendPath}`;
+
+  // 构建 XML 请求体
+  const xmlBody = buildSendXml({
+    phone,
+    smsBody,
+    chatbotURI: cspConfig.chatbotURI,
+    videoPath: options.videoPath || null
   });
 
-  // TODO: 根据运营商文档调整响应解析逻辑
-  const data = response.data;
-  const isSuccess = data.code === 0 || data.code === '0' || data.status === 'success';
-  
-  if (!isSuccess) {
-    throw new Error(`运营商返回错误: ${data.message || JSON.stringify(data)}`);
-  }
+  logger.info(`[CSP发送] 请求URL: ${sendUrl}`);
+  logger.info(`[CSP发送] 收件人: ${phone}, 员工: ${employeeName}`);
 
-  const messageId = data.message_id || data.msgId || data.id || null;
+  const response = await axios.post(sendUrl, xmlBody, {
+    headers: {
+      'Content-Type': 'application/xml;charset=UTF-8',
+      'Authorization': authorization,
+      'GMT': gmt,
+      'appId': cspConfig.appid
+    },
+    timeout: cspConfig.timeout
+  });
+
+  // 解析 XML 响应
+  const xmlResp = typeof response.data === 'string' ? response.data : '';
+  const resultCode = extractXmlValue(xmlResp, 'resultCode');
+  const resultDesc = extractXmlValue(xmlResp, 'resultDesc');
+  const messageId = extractXmlValue(xmlResp, 'messageId');
+
+  logger.info(`[CSP发送] 响应: resultCode=${resultCode}, resultDesc=${resultDesc}, messageId=${messageId}`);
+
+  // resultCode 为 '0' 表示成功
+  if (resultCode !== '0' && resultCode !== null) {
+    throw new Error(`CSP 返回错误: [${resultCode}] ${resultDesc || '未知错误'}`);
+  }
 
   return {
     success: true,
-    messageId: String(messageId),
+    messageId: messageId || `csp_${Date.now()}`,
     provider: 'carrier',
     retryCount: 0,
     error: null,
     sentAt: new Date(),
-    rawResponse: data
+    rawResponse: xmlResp
   };
+};
+
+/**
+ * 构建 CSP 5G 视频短信发送 XML 请求体
+ */
+const buildSendXml = ({ phone, smsBody, chatbotURI, videoPath }) => {
+  // 转义 XML 特殊字符
+  const escapeXml = (str) => {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  };
+
+  const escapedBody = escapeXml(smsBody);
+  const escapedPhone = escapeXml(phone);
+  const escapedChatbotURI = escapeXml(chatbotURI);
+
+  // 构建 mmsBody 部分
+  let mmsBodyXml = '';
+
+  if (videoPath) {
+    // 有视频时，使用 mmsBodyText + 视频附件
+    mmsBodyXml = `
+      <mmsBody>
+        <mmsBodyText>${escapedBody}</mmsBodyText>
+        <mmsAttachment>
+          <attachmentName>video.mp4</attachmentName>
+          <attachmentUrl>${escapeXml(videoPath)}</attachmentUrl>
+          <attachmentType>video/mp4</attachmentType>
+        </mmsAttachment>
+      </mmsBody>`;
+  } else {
+    // 纯文本短信
+    mmsBodyXml = `
+      <mmsBody>
+        <mmsBodyText>${escapedBody}</mmsBodyText>
+      </mmsBody>`;
+  }
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<SendVideoMmsRequest>
+  <requestId>${Date.now()}</requestId>
+  <chatbotURI>${escapedChatbotURI}</chatbotURI>
+  <msisdn>${escapedPhone}</msisdn>
+  ${mmsBodyXml}
+</SendVideoMmsRequest>`;
+};
+
+/**
+ * 简易 XML 值提取
+ */
+const extractXmlValue = (xml, tag) => {
+  if (!xml) return null;
+  const regex = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i');
+  const match = xml.match(regex);
+  return match ? match[1].trim() : null;
 };

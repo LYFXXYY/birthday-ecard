@@ -67,6 +67,11 @@ export const getTodayBirthdayEmployees = (): Promise<Employee[]> => {
   return request.get('/employees/today-birthday')
 }
 
+// 获取明天生日的员工
+export const getTomorrowBirthdayEmployees = (): Promise<Employee[]> => {
+  return request.get('/employees/tomorrow-birthday')
+}
+
 // 回填：为未匹配模板的员工自动分配通用模板
 export const backfillTemplates = (): Promise<{ updated: number }> => {
   return request.post('/employees/backfill-templates')

@@ -73,8 +73,8 @@
             <el-form-item label="职级">
               <el-select v-model="searchForm.level" placeholder="全部" clearable @change="handleSearch" style="width: 120px">
                 <el-option label="管理层" value="management" />
-                <el-option label="经理" value="manager" />
-                <el-option label="员工" value="employee" />
+                <el-option label="三级经理" value="manager" />
+                <el-option label="普通员工" value="employee" />
               </el-select>
             </el-form-item>
             <el-form-item label="生日">
@@ -228,7 +228,7 @@ const getDeptName = (id: number | null | undefined): string => {
 }
 
 const levelLabel = (level?: string): string => {
-  const map: Record<string, string> = { management: '管理层', manager: '经理', employee: '员工' }
+  const map: Record<string, string> = { management: '管理层', manager: '三级经理', employee: '普通员工' }
   return level ? (map[level] || '-') : '-'
 }
 

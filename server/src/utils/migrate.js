@@ -176,6 +176,18 @@ const MIGRATIONS = [
     table: 'operation_logs',
     column: 'operator_type',
     sql: "ALTER TABLE operation_logs ADD COLUMN operator_type ENUM('admin','system') NOT NULL DEFAULT 'admin'"
+  },
+
+  // ===== send_records 表：移动公司投递状态字段 =====
+  {
+    table: 'send_records',
+    column: 'delivery_status',
+    sql: "ALTER TABLE send_records ADD COLUMN delivery_status VARCHAR(20) NULL"
+  },
+  {
+    table: 'send_records',
+    column: 'delivery_time',
+    sql: "ALTER TABLE send_records ADD COLUMN delivery_time DATETIME NULL"
   }
 ];
 
