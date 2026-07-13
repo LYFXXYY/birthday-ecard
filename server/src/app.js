@@ -22,6 +22,8 @@ import operationLogRoutes from './routes/operationLogs.js';
 import monitorRoutes from './routes/monitor.js';
 import systemLogRoutes from './routes/systemLogs.js';
 import smsCallbackRoutes from './routes/smsCallback.js';
+import smsConfigRoutes from './routes/smsConfig.js';
+import { authMiddleware } from './middlewares/auth.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
 import { initTestEmployees } from './utils/initTestEmployees.js';
@@ -73,6 +75,7 @@ app.use('/api/departments', departmentRoutes);
 app.use('/api/operation-logs', operationLogRoutes);
 app.use('/api/monitor', monitorRoutes);
 app.use('/api/system-logs', systemLogRoutes);
+app.use('/api/admin/sms-config', authMiddleware, smsConfigRoutes);
 
 // 贺卡访问路由（公开）
 app.use('/card', cardRoutes);
