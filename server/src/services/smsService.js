@@ -2,8 +2,9 @@
 // 支持两种模式：mock（模拟发送，开发环境）和 carrier（中国移动 CSP V2.4.3）
 
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 import { config } from '../config/index.js';
-import { cspConfig, buildCspAuth } from '../config/carrier-sms.config.js';
+import { loadCspConfig, buildCspAuth } from '../config/carrier-sms.config.js';
 import { getLogger } from '../utils/logger.js';
 
 const logger = getLogger('sms');
@@ -16,6 +17,7 @@ const logger = getLogger('sms');
  * @param {string} employeeName - 员工姓名（用于日志）
  * @param {object} [options] - 可选参数
  * @param {string} [options.videoPath] - 视频文件绝对路径（用于 5G 视频彩信）
+ * @param {number} [options.videoSize] - 视频文件大小（字节）
  * @param {string} [options.cardUrl] - 贺卡链接
  * @returns {Promise<{
  *   success: boolean,
@@ -74,36 +76,58 @@ const _mockSend = async (phone, smsBody, employeeName) => {
 /**
  * 中国移动 CSP 北向接口 V2.4.3 - 5G 视频短信发送
  *
- * 协议要点：
+ * 协议要点（严格遵循 V2.4.3 规范）：
  * - 认证：Basic BASE64(appid:SHA256(SHA256(password)+GMT))
- * - 请求体：XML 格式（非 JSON）
- * - 视频 < 2M 时使用 mmsBodyText 字段内嵌
+ * - 请求体：XML 格式（msg:outboundMessageRequest 标准结构）
+ * - 请求头：Authorization, Date(RFC 1123), Content-Type, UserType=10
+ * - 视频 ≤2M 使用 mmsBodyText，2M~5M 使用 mmsBodyTextLarge，>5M 拒绝
  * - 单次请求最多 100 个手机号
+ * - UUID 格式 contributionID 标识会话
+ * - temporaryStoredTime 最大 259200 秒（3天）
  */
 const _carrierSend = async (phone, smsBody, employeeName, options = {}) => {
+  // 每次发送重新加载配置（管理员通过前端修改后即时生效）
+  const cspConfig = loadCspConfig();
+
   if (!cspConfig.appid || !cspConfig.password) {
     throw new Error('CSP 认证参数未配置（CSP_APP_ID / CSP_PASSWORD）');
   }
 
-  const { authorization, gmt } = await buildCspAuth();
-  const sendUrl = `${cspConfig.serverRoot}${cspConfig.sendPath}`;
+  if (!cspConfig.videoTemplateId) {
+    throw new Error('CSP 视频模板 ID 未配置（CSP_VIDEO_TEMPLATE_ID）');
+  }
 
-  // 构建 XML 请求体
+  // 视频文件大小校验
+  const videoSize = options.videoSize || 0;
+  if (videoSize > cspConfig.videoSizeLimitLarge) {
+    throw new Error(`视频文件过大: ${(videoSize / 1024 / 1024).toFixed(1)}MB，上限 ${cspConfig.videoSizeLimitLarge / 1024 / 1024}MB`);
+  }
+
+  // 生成认证请求头
+  const authHeaders = await buildCspAuth(cspConfig.password, cspConfig.appid);
+
+  // 拼接请求 URL（V2.4.3 标准路径）
+  const sendUrl = `${cspConfig.serverRoot}${cspConfig.sendPath}/${cspConfig.chatbotURI}/requests`;
+
+  // 构建 XML 请求体（符合 V2.4.3 标准格式）
   const xmlBody = buildSendXml({
     phone,
-    smsBody,
-    chatbotURI: cspConfig.chatbotURI,
-    videoPath: options.videoPath || null
+    videoTemplateId: cspConfig.videoTemplateId,
+    tempStoreTime: cspConfig.tempStoreTime,
+    videoSize,
+    videoSizeLimit: cspConfig.videoSizeLimit
   });
 
   logger.info(`[CSP发送] 请求URL: ${sendUrl}`);
   logger.info(`[CSP发送] 收件人: ${phone}, 员工: ${employeeName}`);
+  logger.info(`[CSP发送] 模板ID: ${cspConfig.videoTemplateId}, 视频大小: ${(videoSize / 1024).toFixed(0)}KB`);
 
   const response = await axios.post(sendUrl, xmlBody, {
     headers: {
-      'Content-Type': 'application/xml;charset=UTF-8',
-      'Authorization': authorization,
-      'GMT': gmt,
+      'Authorization': authHeaders.authorization,
+      'Date': authHeaders.date,
+      'Content-Type': authHeaders.contentType,
+      'UserType': authHeaders.userType,
       'appId': cspConfig.appid
     },
     timeout: cspConfig.timeout
@@ -135,8 +159,17 @@ const _carrierSend = async (phone, smsBody, employeeName, options = {}) => {
 
 /**
  * 构建 CSP 5G 视频短信发送 XML 请求体
+ *
+ * 严格遵循 V2.4.3 规范的 msg:outboundMessageRequest 结构：
+ * - destinationAddress: tel:+86{phone}
+ * - contentType: static-template
+ * - bodyText / mmsBodyText: 模板 JSON（视频≤2M）
+ * - mmsBodyTextLarge: 模板 JSON（视频 2M~5M）
+ * - temporaryStoredTime: 离线缓存时长
+ * - contributionID: UUID 会话标识
+ * - storeSupported: true
  */
-const buildSendXml = ({ phone, smsBody, chatbotURI, videoPath }) => {
+const buildSendXml = ({ phone, videoTemplateId, tempStoreTime, videoSize, videoSizeLimit }) => {
   // 转义 XML 特殊字符
   const escapeXml = (str) => {
     if (!str) return '';
@@ -148,39 +181,34 @@ const buildSendXml = ({ phone, smsBody, chatbotURI, videoPath }) => {
       .replace(/'/g, '&apos;');
   };
 
-  const escapedBody = escapeXml(smsBody);
   const escapedPhone = escapeXml(phone);
-  const escapedChatbotURI = escapeXml(chatbotURI);
+  const escapedTemplateId = escapeXml(videoTemplateId);
+  const contributionId = randomUUID();
 
-  // 构建 mmsBody 部分
-  let mmsBodyXml = '';
+  // 模板 JSON 内容
+  const templateJson = `{"templateID":"${escapedTemplateId}"}`;
 
-  if (videoPath) {
-    // 有视频时，使用 mmsBodyText + 视频附件
-    mmsBodyXml = `
-      <mmsBody>
-        <mmsBodyText>${escapedBody}</mmsBodyText>
-        <mmsAttachment>
-          <attachmentName>video.mp4</attachmentName>
-          <attachmentUrl>${escapeXml(videoPath)}</attachmentUrl>
-          <attachmentType>video/mp4</attachmentType>
-        </mmsAttachment>
-      </mmsBody>`;
+  // 根据视频大小选择字段
+  let bodyFieldsXml = '';
+  if (videoSize > videoSizeLimit) {
+    // 2M~5M：使用 mmsBodyTextLarge
+    bodyFieldsXml = `    <bodyText>${templateJson}</bodyText>
+    <mmsBodyTextLarge>${templateJson}</mmsBodyTextLarge>`;
   } else {
-    // 纯文本短信
-    mmsBodyXml = `
-      <mmsBody>
-        <mmsBodyText>${escapedBody}</mmsBodyText>
-      </mmsBody>`;
+    // ≤2M（或无视频）：使用 mmsBodyText
+    bodyFieldsXml = `    <bodyText>${templateJson}</bodyText>
+    <mmsBodyText>${templateJson}</mmsBodyText>`;
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<SendVideoMmsRequest>
-  <requestId>${Date.now()}</requestId>
-  <chatbotURI>${escapedChatbotURI}</chatbotURI>
-  <msisdn>${escapedPhone}</msisdn>
-  ${mmsBodyXml}
-</SendVideoMmsRequest>`;
+<msg:outboundMessageRequest xmlns:msg="urn:oma:xml:rest:netapi:messaging:1">
+    <destinationAddress>tel:+86${escapedPhone}</destinationAddress>
+    <contentType>static-template</contentType>
+${bodyFieldsXml}
+    <temporaryStoredTime>${tempStoreTime}</temporaryStoredTime>
+    <contributionID>${contributionId}</contributionID>
+    <storeSupported>true</storeSupported>
+</msg:outboundMessageRequest>`;
 };
 
 /**

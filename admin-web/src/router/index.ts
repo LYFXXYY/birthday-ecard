@@ -85,6 +85,11 @@ const routes: RouteRecordRaw[] = [
         path: 'system-logs',
         name: 'SystemLogs',
         component: () => import('@/views/SystemLogs.vue')
+      },
+      {
+        path: 'sms-config',
+        name: 'SmsConfig',
+        component: () => import('@/views/SmsConfig.vue')
       }
     ]
   },
