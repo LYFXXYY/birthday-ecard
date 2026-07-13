@@ -199,11 +199,30 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
       error: record.record.error_message || null
     };
   } catch (err) {
+    // 创建失败记录（保留审计痕迹，即使贺卡生成崩溃也能在发送记录中查到）
+    try {
+      await SendRecord.create({
+        employee_id: employee.id,
+        template_id: template.id,
+        send_status: 'failed',
+        send_time: new Date(),
+        admin_id: adminId,
+        error_message: `贺卡生成异常: ${err.message}`,
+        card_url: cardResult?.cardUrl || null,
+        card_id: cardResult?.cardId || null,
+        card_dir: cardResult?.cardDir || null,
+        video_path: null,
+        video_url: null
+      });
+    } catch (dbErr) {
+      logger.error(`[发送服务] 创建失败记录异常: ${dbErr.message}`);
+    }
+
     // 清理已生成的文件
     if (cardResult?.cardId) {
-      const cardDir = path.join(config.cardsDir, cardResult.cardId);
+      const cardDir = path.resolve(config.cardsDir, cardResult.cardId);
       await fs.rm(cardDir, { recursive: true, force: true }).catch(() => {});
-      const videoPath = path.join(config.videosDir, `${cardResult.cardId}.mp4`);
+      const videoPath = path.resolve(config.videosDir, `${cardResult.cardId}.mp4`);
       await fs.unlink(videoPath).catch(() => {});
     }
     throw err;

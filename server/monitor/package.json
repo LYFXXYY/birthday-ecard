@@ -1,0 +1,16 @@
+{
+  "name": "birthday-monitor",
+  "version": "1.0.0",
+  "description": "独立监控项目 - 监控生日贺卡系统运行状态",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "mysql2": "^3.12.0",
+    "node-cron": "^3.0.3"
+  }
+}

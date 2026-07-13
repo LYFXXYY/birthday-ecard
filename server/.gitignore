@@ -2,7 +2,7 @@ node_modules/
 .env
 generated-cards/
 generated-videos/
-heartbeats/
+heartbeats/monitor.json
 uploads/
 logs/
 *.log

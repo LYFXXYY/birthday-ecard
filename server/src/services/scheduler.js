@@ -177,8 +177,9 @@ export const startBirthdayScheduler = async () => {
 
 /**
  * 处理今日生日员工
- * 
- * 流程：查询今日生日员工 -> 逐个调用共享发送服务
+ *
+ * 流程：查询今日生日员工 -> 逐个调用共享发送服务 -> 汇总报告
+ * 每个员工独立 try/catch，单个失败不影响其他人。
  * 发送服务内部已包含：匹配模板 → 生成贺卡 → 创建记录 → 发送短信（含重试） → 更新状态
  */
 export const processBirthdayEmployees = async () => {
@@ -187,17 +188,28 @@ export const processBirthdayEmployees = async () => {
   const day = today.getDate();
 
   // 1. 查询今天生日的员工
-  const birthdayEmployees = await Employee.findAll({
-    where: {
-      is_active: true,
-      [Op.and]: [
-        sequelize.where(sequelize.fn('MONTH', sequelize.col('birthday')), month),
-        sequelize.where(sequelize.fn('DAY', sequelize.col('birthday')), day)
-      ]
-    }
-  });
+  let birthdayEmployees;
+  try {
+    birthdayEmployees = await Employee.findAll({
+      where: {
+        is_active: true,
+        [Op.and]: [
+          sequelize.where(sequelize.fn('MONTH', sequelize.col('birthday')), month),
+          sequelize.where(sequelize.fn('DAY', sequelize.col('birthday')), day)
+        ]
+      }
+    });
+  } catch (err) {
+    logger.error(`[定时任务] 查询今日生日员工失败: ${err.message}`);
+    await logError('scheduler', `查询今日生日员工失败: ${err.message}`);
+    throw err;
+  }
 
-  logger.info(`[定时任务] 找到 ${birthdayEmployees.length} 位今日生日员工`);
+  const total = birthdayEmployees.length;
+  logger.info(`[定时任务] 找到 ${total} 位今日生日员工`);
+  await logInfo('scheduler', `今日生日员工共 ${total} 人，开始逐个处理`);
+
+  if (total === 0) return;
 
   // 2. 预加载所有激活模板（避免循环内 N+1 查询）
   const preloadedTemplates = await Template.findAll({
@@ -208,23 +220,42 @@ export const processBirthdayEmployees = async () => {
     }]
   });
 
-  // 3. 逐个处理（共享发送函数内部已包含重复发送检查）
+  // 3. 逐个处理，追踪结果
+  const results = { success: 0, failed: 0, skipped: 0, errors: [] };
+
   for (const employee of birthdayEmployees) {
     try {
       const result = await sendBirthdayCard({ employeeId: employee.id, skipIfSentToday: true, preloadedTemplates });
 
       if (result.error === '今日已发送，跳过') {
+        results.skipped++;
         logger.info(`[定时任务] 员工 ${employee.name} 今日已发送，跳过`);
         continue;
       }
 
       if (result.success) {
+        results.success++;
         logger.info(`[定时任务] 已为员工 ${employee.name} 生成贺卡并发送短信 (${result.smsProvider})`);
       } else {
+        results.failed++;
+        results.errors.push({ name: employee.name, error: result.error });
         logger.warn(`[定时任务] 员工 ${employee.name} 发送失败: ${result.error}`);
       }
     } catch (err) {
-      logger.error(`[定时任务] 处理员工 ${employee.name} 失败: ${err.message}`);
+      results.failed++;
+      results.errors.push({ name: employee.name, error: err.message });
+      logger.error(`[定时任务] 处理员工 ${employee.name} 异常: ${err.message}`);
     }
+  }
+
+  // 4. 汇总报告
+  const summary = `生日发送完成：共 ${total} 人，成功 ${results.success}，失败 ${results.failed}，跳过 ${results.skipped}`;
+  logger.info(`[定时任务] ${summary}`);
+  await logInfo('scheduler', summary);
+
+  if (results.errors.length > 0) {
+    const errorDetail = results.errors.map(e => `${e.name}: ${e.error}`).join('；');
+    logger.warn(`[定时任务] 失败详情: ${errorDetail}`);
+    await logWarn('scheduler', `失败详情: ${errorDetail}`);
   }
 };

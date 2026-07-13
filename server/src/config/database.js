@@ -19,7 +19,7 @@ export const sequelize = new Sequelize(
     timezone: '+08:00',
     charset: 'utf8mb4',
     collate: 'utf8mb4_unicode_ci',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: process.env.DB_LOGGING === 'true' ? console.log : false,
     dialectOptions: {
       charset: 'utf8mb4'
     },

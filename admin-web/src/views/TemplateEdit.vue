@@ -65,7 +65,7 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="模板页数" prop="page_count">
+        <el-form-item v-if="false" label="模板页数" prop="page_count">
           <el-select v-model="formData.page_count" placeholder="请选择页数" style="width: 200px">
             <el-option label="4 页（普通员工）" :value="4" />
             <el-option label="7 页（管理层/三级经理）" :value="7" />

@@ -57,7 +57,5 @@ build/
 代码审查与优化总结报告.md
 生日贺卡项目开发文档.md
 server/heartbeats/monitor.json
-提示词优化 - 功能优化系列任务.md
-优化后的提示词-可直接复制使用.md
-AGENTS.md
+agents.md
 项目改进说明与修改打算.md
