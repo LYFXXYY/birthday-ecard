@@ -167,16 +167,27 @@ export const generateCard = async (template, employee) => {
       logger.info(`[贺卡生成] 调用 record.js 录制视频...`);
       const result = spawnSync(process.execPath, [recordScript, videoPath], {
         cwd: cardDir,
-        stdio: 'inherit',
+        stdio: ['inherit', 'inherit', 'pipe'], // 捕获 stderr 用于错误诊断
         timeout: 300000 // 5 分钟超时
       });
 
-      if (result.status === 0 && fsSync.existsSync(videoPath)) {
+      // 诊断失败原因（优先级：spawn 错误 > 超时 > 信号 > 非零退出码）
+      if (result.error) {
+        logger.error(`[贺卡生成] record.js 启动失败: ${result.error.message}`);
+      } else if (result.signal) {
+        logger.error(`[贺卡生成] record.js 被信号 ${result.signal} 终止`);
+      } else if (result.status !== 0) {
+        const stderrSnippet = result.stderr?.toString('utf-8')
+          .split('\n').filter(l => l.trim()).slice(-5).join('\n');
+        logger.error(`[贺卡生成] record.js 退出码 ${result.status}，stderr:\n${stderrSnippet}`);
+      } else if (!fsSync.existsSync(videoPath)) {
+        logger.error(`[贺卡生成] record.js 退出码 0 但视频文件未生成: ${videoPath}`);
+      } else if (fsSync.statSync(videoPath).size === 0) {
+        logger.error(`[贺卡生成] 视频文件为空: ${videoPath}`);
+      } else {
         videoSuccess = true;
         const sizeMB = (fsSync.statSync(videoPath).size / 1000 / 1000).toFixed(2);
         logger.info(`[贺卡生成] 视频录制成功: ${sizeMB}MB`);
-      } else {
-        logger.error(`[贺卡生成] record.js 退出码 ${result.status}，视频录制失败`);
       }
     } else {
       logger.warn(`[贺卡生成] 模板无 record.js，跳过视频录制`);

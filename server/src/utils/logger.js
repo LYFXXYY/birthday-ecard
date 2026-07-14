@@ -1,15 +1,31 @@
 // 日志工具 - 基于 log4js
 // 日志文件输出到 server/logs/，按日期轮转
-import log4js from 'log4js';
-import path from 'path';
+// 开发环境：终端 + 文件，生产环境：仅文件
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import path from 'path';
+
+// ESM 中 import 先于模块体执行，必须提前加载 .env
+const __envFile = fileURLToPath(import.meta.url);
+const __envDir = path.dirname(__envFile);
+dotenv.config({ path: path.join(__envDir, '../../.env') });
+
+import log4js from 'log4js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const logsDir = path.resolve(__dirname, '../../logs');
 
+const isProd = process.env.NODE_ENV === 'production';
+const logLevel = process.env.LOG_LEVEL || (isProd ? 'info' : 'debug');
+
+// 开发环境输出到终端，生产环境仅写文件
+const defaultAppenders = isProd
+  ? ['file', 'errorFile']
+  : ['console', 'file', 'errorFile'];
+
 log4js.configure({
   appenders: {
-    // 控制台输出
+    // 控制台输出（仅开发环境使用）
     console: {
       type: 'stdout',
       layout: {
@@ -42,19 +58,13 @@ log4js.configure({
         type: 'pattern',
         pattern: '%d{yyyy-MM-dd hh:mm:ss} %p %category %m'
       },
-      // 只接收 error 及以上级别
       level: 'error'
     }
   },
   categories: {
     default: {
-      appenders: ['console', 'file', 'errorFile'],
-      level: 'debug'
-    },
-    // 生产环境可设为 info 减少输出量
-    prod: {
-      appenders: ['file', 'errorFile'],
-      level: 'info'
+      appenders: defaultAppenders,
+      level: logLevel
     }
   }
 });

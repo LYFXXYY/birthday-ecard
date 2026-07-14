@@ -78,7 +78,7 @@
               </el-select>
             </el-form-item>
             <el-form-item label="生日">
-              <el-select v-model="searchForm.birthday_filter" placeholder="全部" @change="handleSearch">
+              <el-select v-model="searchForm.birthday_filter" placeholder="全部" @change="handleSearch" style="width: 120px">
                 <el-option label="全部" value="all" />
                 <el-option label="今日生日" value="today" />
               </el-select>
@@ -118,20 +118,20 @@
             </el-table-column>
             <el-table-column prop="birthday" label="生日" width="110" />
             <el-table-column prop="phone" label="手机号" width="130" />
-            <el-table-column label="部门" min-width="140">
+            <el-table-column label="部门" min-width="160">
               <template #default="{ row }">
                 {{ getDeptName(row.department_id) || row.department || '-' }}
               </template>
             </el-table-column>
-            <el-table-column label="职级" width="80">
+            <el-table-column label="职级" width="100">
               <template #default="{ row }">
                 {{ levelLabel(row.level) }}
               </template>
             </el-table-column>
-            <el-table-column prop="position" label="职位" min-width="120" />
+            <el-table-column prop="position" label="职位" min-width="160" />
             <el-table-column label="操作" width="150" fixed="right">
               <template #default="{ row }">
-                <el-button type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+                <el-button type="primary" size="small" @click="handleEdit(row)" style="margin-right: 8px">编辑</el-button>
                 <el-button type="danger" size="small" @click="handleDelete(row)">删除</el-button>
               </template>
             </el-table-column>

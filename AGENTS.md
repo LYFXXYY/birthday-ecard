@@ -106,6 +106,16 @@ npm run build        # 生产构建
 - 内置指数退避重试机制
 - SendRecord 追踪字段：`message_id`、`sms_provider`、`retry_count`、`sms_content`
 
+### 监控项目（server/monitor/）
+- 独立 Node.js ESM 项目，位于 `server/monitor/`，可独立运行或作为后端子进程运行
+- 依赖：`dotenv`、`mysql2`、`node-cron`（不依赖主项目代码）
+- 四个检测模块：HTTP 健康检查（30s）、TCP 端口检测（60s）、心跳文件监控（60s）、数据库直连检测（300s）
+- 后端 `app.js` 通过 `spawn(process.execPath, [monitorEntry], { detached: true })` 启动监控子进程
+- `detached: true` 使监控进程脱离后端，后端崩溃时监控继续运行并检测异常
+- 日志输出到 `server/monitor/logs/monitor-YYYY-MM-DD.log`，每天凌晨 2:00 自动清理超过 30 天的日志
+- 配置文件 `server/monitor/.env`，检测频率和超时阈值均可配置
+- node-cron 注意：5 字段格式最小粒度是分钟，6 字段格式支持秒级；混用会导致频率错误
+
 ### 后端配置要点
 - `express.json()` 和 `express.urlencoded()` limit 设为 `'5mb'`（大型模板含 base64 资源可达 1.4MB）
 - Axios 全局 timeout 设为 30000ms（大型模板加载需要更多时间）
