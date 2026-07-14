@@ -178,8 +178,8 @@ function updateDots() {
 }
 
 function normalizeScreenName(name) {
-  if (isRecording && recorderScreenAliases[name]) return recorderScreenAliases[name];
   if (screenOrder.includes(name)) return name;
+  if (isRecording && recorderScreenAliases[name]) return recorderScreenAliases[name];
   return fallbackScreenAliases[name] || name;
 }
 

@@ -97,26 +97,26 @@ button {
 
 .scene-overlay-cover {
   background:
-    linear-gradient(180deg, rgba(17, 18, 24, 0.08), rgba(18, 18, 24, 0.16)),
-    linear-gradient(90deg, rgba(28, 26, 30, 0.38) 0%, rgba(28, 26, 30, 0.16) 34%, rgba(255, 255, 255, 0) 74%);
+    linear-gradient(180deg, rgba(17, 18, 24, 0.04), rgba(18, 18, 24, 0.10)),
+    linear-gradient(90deg, rgba(28, 26, 30, 0.26) 0%, rgba(28, 26, 30, 0.10) 34%, rgba(255, 255, 255, 0) 74%);
 }
 
 .scene-overlay-wish {
   background:
-    linear-gradient(180deg, rgba(19, 19, 26, 0.08), rgba(19, 19, 26, 0.18)),
-    linear-gradient(90deg, rgba(25, 24, 30, 0.42) 0%, rgba(25, 24, 30, 0.16) 42%, rgba(255, 255, 255, 0) 82%);
+    linear-gradient(180deg, rgba(19, 19, 26, 0.04), rgba(19, 19, 26, 0.12)),
+    linear-gradient(90deg, rgba(25, 24, 30, 0.30) 0%, rgba(25, 24, 30, 0.10) 42%, rgba(255, 255, 255, 0) 82%);
 }
 
 .scene-overlay-highlight {
   background:
-    linear-gradient(180deg, rgba(18, 18, 24, 0.08), rgba(18, 18, 24, 0.18)),
-    linear-gradient(90deg, rgba(28, 26, 31, 0.34) 0%, rgba(28, 26, 31, 0.12) 36%, rgba(255, 255, 255, 0) 78%);
+    linear-gradient(180deg, rgba(18, 18, 24, 0.04), rgba(18, 18, 24, 0.12)),
+    linear-gradient(90deg, rgba(28, 26, 31, 0.22) 0%, rgba(28, 26, 31, 0.08) 36%, rgba(255, 255, 255, 0) 78%);
 }
 
 .scene-overlay-final {
   background:
-    linear-gradient(180deg, rgba(19, 18, 24, 0.06), rgba(19, 18, 24, 0.14)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(27, 24, 29, 0.18) 100%);
+    linear-gradient(180deg, rgba(19, 18, 24, 0.02), rgba(19, 18, 24, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(27, 24, 29, 0.12) 100%);
 }
 
 .music-toggle {

@@ -89,7 +89,7 @@ button {
   z-index: 0;
   object-fit: cover;
   transform: scale(1.078);
-  filter: brightness(1.08) saturate(1.04) contrast(0.98);
+  filter: brightness(1.14) saturate(1.10) contrast(1.02);
   transition: transform 7000ms ease, filter 860ms ease;
 }
 
@@ -101,25 +101,25 @@ button {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(237, 248, 251, 0.02) 48%, rgba(237, 248, 251, 0.2)),
-    linear-gradient(94deg, rgba(255, 253, 247, 0.82) 0%, rgba(255, 253, 247, 0.52) 34%, rgba(255, 253, 247, 0.08) 70%, rgba(255, 253, 247, 0) 100%);
+    radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(237, 248, 251, 0.01) 48%, rgba(237, 248, 251, 0.12)),
+    linear-gradient(94deg, rgba(255, 253, 247, 0.50) 0%, rgba(255, 253, 247, 0.32) 34%, rgba(255, 253, 247, 0.05) 70%, rgba(255, 253, 247, 0) 100%);
 }
 
 .compass .scene-overlay,
 .wish .scene-overlay,
 .message .scene-overlay {
   background:
-    radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 32%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(237, 248, 251, 0.04) 48%, rgba(237, 248, 251, 0.22)),
-    linear-gradient(270deg, rgba(255, 253, 247, 0.72) 0%, rgba(255, 253, 247, 0.45) 36%, rgba(255, 253, 247, 0.08) 74%, rgba(255, 253, 247, 0) 100%);
+    radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(237, 248, 251, 0.02) 48%, rgba(237, 248, 251, 0.14)),
+    linear-gradient(270deg, rgba(255, 253, 247, 0.44) 0%, rgba(255, 253, 247, 0.28) 36%, rgba(255, 253, 247, 0.05) 74%, rgba(255, 253, 247, 0) 100%);
 }
 
 .final .scene-overlay {
   background:
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(237, 248, 251, 0.02) 50%, rgba(237, 248, 251, 0.22)),
-    radial-gradient(circle at center, rgba(255, 255, 255, 0.08), rgba(237, 248, 251, 0.2) 76%);
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(237, 248, 251, 0.01) 50%, rgba(237, 248, 251, 0.14)),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.05), rgba(237, 248, 251, 0.12) 76%);
 }
 
 .brand-slot,

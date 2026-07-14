@@ -7,8 +7,8 @@
   --peach: #ffd8bb;
   --berry: #8c5860;
   --line: rgba(255, 244, 230, 0.22);
-  --panel: rgba(69, 45, 48, 0.2);
-  --panel-strong: rgba(59, 38, 40, 0.36);
+  --panel: rgba(69, 45, 48, 0.28);
+  --panel-strong: rgba(59, 38, 40, 0.42);
   --shadow: rgba(16, 13, 18, 0.28);
 }
 
@@ -92,26 +92,26 @@ button {
 
 .scene-overlay-cover {
   background:
-    linear-gradient(180deg, rgba(42, 23, 25, 0.14), rgba(34, 24, 32, 0.18)),
-    linear-gradient(90deg, rgba(55, 29, 31, 0.48) 0%, rgba(55, 29, 31, 0.22) 34%, rgba(255, 255, 255, 0) 72%);
+    linear-gradient(180deg, rgba(42, 23, 25, 0.06), rgba(34, 24, 32, 0.10)),
+    linear-gradient(90deg, rgba(55, 29, 31, 0.32) 0%, rgba(55, 29, 31, 0.14) 34%, rgba(255, 255, 255, 0) 72%);
 }
 
 .scene-overlay-wish {
   background:
-    linear-gradient(180deg, rgba(43, 28, 30, 0.12), rgba(43, 28, 30, 0.22)),
-    linear-gradient(90deg, rgba(46, 29, 34, 0.58) 0%, rgba(46, 29, 34, 0.18) 44%, rgba(255, 255, 255, 0) 82%);
+    linear-gradient(180deg, rgba(43, 28, 30, 0.04), rgba(43, 28, 30, 0.14)),
+    linear-gradient(90deg, rgba(46, 29, 34, 0.40) 0%, rgba(46, 29, 34, 0.10) 44%, rgba(255, 255, 255, 0) 82%);
 }
 
 .scene-overlay-highlight {
   background:
-    linear-gradient(180deg, rgba(53, 28, 34, 0.08), rgba(35, 24, 31, 0.18)),
-    linear-gradient(90deg, rgba(51, 31, 35, 0.46) 0%, rgba(51, 31, 35, 0.12) 36%, rgba(255, 255, 255, 0) 78%);
+    linear-gradient(180deg, rgba(53, 28, 34, 0.02), rgba(35, 24, 31, 0.12)),
+    linear-gradient(90deg, rgba(51, 31, 35, 0.30) 0%, rgba(51, 31, 35, 0.08) 36%, rgba(255, 255, 255, 0) 78%);
 }
 
 .scene-overlay-final {
   background:
-    linear-gradient(180deg, rgba(38, 22, 28, 0.08), rgba(30, 20, 26, 0.18)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0) 52%, rgba(47, 26, 28, 0.18) 100%);
+    linear-gradient(180deg, rgba(38, 22, 28, 0.02), rgba(30, 20, 26, 0.12)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 52%, rgba(47, 26, 28, 0.12) 100%);
 }
 
 .music-toggle {
