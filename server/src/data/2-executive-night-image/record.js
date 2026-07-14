@@ -16,7 +16,7 @@ const CARD_DIR = __dirname;
 const TEMP_DIR = path.join(CARD_DIR, '.recording-temp');
 
 const screenOrder = ["cover","wish","highlight","final"];
-const PAGE_DURATION = 6.5; // seconds per page (4 pages = 26.0s total)
+const PAGE_DURATION = 3.0; // seconds per page (4 pages = 12.0s total)
 const TAIL_DURATION = 0;
 const MAX_SIZE_MB = 2; // 目标文件大小上限
 

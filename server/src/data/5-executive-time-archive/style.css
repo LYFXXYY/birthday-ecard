@@ -100,27 +100,27 @@ button {
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(10, 18, 17, 0.22) 0%, rgba(10, 18, 17, 0.08) 42%, rgba(10, 18, 17, 0.52) 100%),
-    linear-gradient(92deg, rgba(10, 18, 17, 0.58) 0%, rgba(10, 18, 17, 0.25) 42%, rgba(10, 18, 17, 0.03) 78%);
+    linear-gradient(180deg, rgba(10, 18, 17, 0.14) 0%, rgba(10, 18, 17, 0.04) 42%, rgba(10, 18, 17, 0.38) 100%),
+    linear-gradient(92deg, rgba(10, 18, 17, 0.40) 0%, rgba(10, 18, 17, 0.15) 42%, rgba(10, 18, 17, 0.01) 78%);
 }
 
 .name .scene-overlay,
 .message .scene-overlay {
   background:
-    linear-gradient(180deg, rgba(9, 16, 15, 0.12) 0%, rgba(9, 16, 15, 0.18) 46%, rgba(9, 16, 15, 0.58) 100%),
-    radial-gradient(circle at 50% 44%, rgba(12, 24, 24, 0.12), rgba(9, 16, 15, 0.46) 72%);
+    linear-gradient(180deg, rgba(9, 16, 15, 0.06) 0%, rgba(9, 16, 15, 0.12) 46%, rgba(9, 16, 15, 0.40) 100%),
+    radial-gradient(circle at 50% 44%, rgba(12, 24, 24, 0.06), rgba(9, 16, 15, 0.32) 72%);
 }
 
 .compass .scene-overlay {
   background:
-    linear-gradient(180deg, rgba(12, 18, 17, 0.12), rgba(12, 18, 17, 0.48)),
-    linear-gradient(270deg, rgba(10, 18, 17, 0.6) 0%, rgba(10, 18, 17, 0.2) 52%, rgba(10, 18, 17, 0.05) 100%);
+    linear-gradient(180deg, rgba(12, 18, 17, 0.06), rgba(12, 18, 17, 0.34)),
+    linear-gradient(270deg, rgba(10, 18, 17, 0.42) 0%, rgba(10, 18, 17, 0.12) 52%, rgba(10, 18, 17, 0.02) 100%);
 }
 
 .final .scene-overlay {
   background:
-    linear-gradient(180deg, rgba(8, 15, 15, 0.18), rgba(8, 15, 15, 0.22) 48%, rgba(8, 15, 15, 0.62)),
-    radial-gradient(circle at center, rgba(255, 247, 225, 0.05), rgba(8, 15, 15, 0.46) 70%);
+    linear-gradient(180deg, rgba(8, 15, 15, 0.10), rgba(8, 15, 15, 0.14) 48%, rgba(8, 15, 15, 0.44)),
+    radial-gradient(circle at center, rgba(255, 247, 225, 0.03), rgba(8, 15, 15, 0.32) 70%);
 }
 
 .archive-brand,

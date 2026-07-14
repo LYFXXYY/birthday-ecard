@@ -98,14 +98,14 @@ button {
 .scene-overlay-reflection,
 .scene-overlay-signoff {
   background:
-    linear-gradient(180deg, rgba(18, 18, 21, 0.06), rgba(18, 18, 21, 0.16)),
-    linear-gradient(90deg, rgba(26, 26, 30, 0.28) 0%, rgba(26, 26, 30, 0.12) 38%, rgba(255, 255, 255, 0) 78%);
+    linear-gradient(180deg, rgba(18, 18, 21, 0.02), rgba(18, 18, 21, 0.10)),
+    linear-gradient(90deg, rgba(26, 26, 30, 0.18) 0%, rgba(26, 26, 30, 0.06) 38%, rgba(255, 255, 255, 0) 78%);
 }
 
 .scene-overlay-final {
   background:
-    linear-gradient(180deg, rgba(18, 18, 21, 0.06), rgba(18, 18, 21, 0.16)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(27, 24, 29, 0.18) 100%);
+    linear-gradient(180deg, rgba(18, 18, 21, 0.02), rgba(18, 18, 21, 0.10)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 48%, rgba(27, 24, 29, 0.10) 100%);
 }
 
 .music-toggle {

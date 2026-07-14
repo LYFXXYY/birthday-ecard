@@ -1,0 +1,7 @@
+{
+  "time": "2026-07-13T13:23:25.715Z",
+  "level": "warn",
+  "name": "http",
+  "message": "[守护进程告警] HTTP 请求超时 (5000ms)",
+  "detail": null
+}

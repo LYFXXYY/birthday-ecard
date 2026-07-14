@@ -89,7 +89,7 @@ button {
   z-index: 0;
   object-fit: cover;
   transform: scale(1.08);
-  filter: brightness(1.08) saturate(1.08) contrast(0.98);
+  filter: brightness(1.14) saturate(1.14) contrast(1.02);
   transition: transform 6400ms ease, filter 840ms ease;
 }
 
@@ -101,24 +101,24 @@ button {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 34%),
-    radial-gradient(circle at 82% 24%, rgba(185, 233, 106, 0.22) 0%, rgba(185, 233, 106, 0) 32%),
-    linear-gradient(180deg, rgba(246, 251, 255, 0.18), rgba(255, 255, 255, 0.03) 46%, rgba(246, 251, 255, 0.2)),
-    linear-gradient(94deg, rgba(255, 253, 248, 0.84) 0%, rgba(255, 253, 248, 0.5) 35%, rgba(255, 253, 248, 0.08) 72%, rgba(255, 253, 248, 0) 100%);
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.44) 0%, rgba(255, 255, 255, 0) 34%),
+    radial-gradient(circle at 82% 24%, rgba(185, 233, 106, 0.14) 0%, rgba(185, 233, 106, 0) 32%),
+    linear-gradient(180deg, rgba(246, 251, 255, 0.10), rgba(255, 255, 255, 0.02) 46%, rgba(246, 251, 255, 0.12)),
+    linear-gradient(94deg, rgba(255, 253, 248, 0.52) 0%, rgba(255, 253, 248, 0.30) 35%, rgba(255, 253, 248, 0.05) 72%, rgba(255, 253, 248, 0) 100%);
 }
 
 .highlight .scene-overlay {
   background:
-    radial-gradient(circle at 78% 18%, rgba(240, 113, 168, 0.26) 0%, rgba(240, 113, 168, 0) 32%),
-    linear-gradient(180deg, rgba(246, 251, 255, 0.14), rgba(255, 255, 255, 0.04) 48%, rgba(246, 251, 255, 0.2)),
-    linear-gradient(90deg, rgba(255, 253, 248, 0.74) 0%, rgba(255, 253, 248, 0.44) 37%, rgba(255, 253, 248, 0.06) 72%);
+    radial-gradient(circle at 78% 18%, rgba(240, 113, 168, 0.16) 0%, rgba(240, 113, 168, 0) 32%),
+    linear-gradient(180deg, rgba(246, 251, 255, 0.08), rgba(255, 255, 255, 0.02) 48%, rgba(246, 251, 255, 0.12)),
+    linear-gradient(90deg, rgba(255, 253, 248, 0.46) 0%, rgba(255, 253, 248, 0.28) 37%, rgba(255, 253, 248, 0.04) 72%);
 }
 
 .final .scene-overlay {
   background:
-    radial-gradient(circle at 50% 18%, rgba(123, 216, 241, 0.32) 0%, rgba(123, 216, 241, 0) 35%),
-    radial-gradient(circle at 76% 22%, rgba(169, 156, 255, 0.24) 0%, rgba(169, 156, 255, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02) 52%, rgba(246, 251, 255, 0.22));
+    radial-gradient(circle at 50% 18%, rgba(123, 216, 241, 0.20) 0%, rgba(123, 216, 241, 0) 35%),
+    radial-gradient(circle at 76% 22%, rgba(169, 156, 255, 0.15) 0%, rgba(169, 156, 255, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.01) 52%, rgba(246, 251, 255, 0.14));
 }
 
 .brand-slot,

@@ -50,5 +50,12 @@ export const config = {
   // 会话超时时间（分钟，默认 30 分钟）
   sessionTimeoutMinutes: parseInt(process.env.SESSION_TIMEOUT_MINUTES) || 30,
   // 最大并发会话数（默认 3）
-  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS) || 3
+  maxConcurrentSessions: parseInt(process.env.MAX_CONCURRENT_SESSIONS) || 3,
+  // 守护进程配置
+  watchdog: {
+    enabled: process.env.WATCHDOG_ENABLED !== 'false',
+    intervalSeconds: parseInt(process.env.WATCHDOG_INTERVAL) || 30,
+    httpTimeoutMs: parseInt(process.env.WATCHDOG_HTTP_TIMEOUT) || 5000,
+    restartDelayMs: parseInt(process.env.WATCHDOG_RESTART_DELAY) || 5000
+  }
 };
