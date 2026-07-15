@@ -296,7 +296,7 @@ h3 {
   line-height: 1;
 }
 
-h1 { font-size: clamp(62px, 18vw, 92px); }
+h1 { font-size: clamp(48px, 14vw, 76px); }
 h2 { font-size: clamp(36px, 10vw, 58px); }
 h3 { font-size: clamp(28px, 8.2vw, 42px); }
 

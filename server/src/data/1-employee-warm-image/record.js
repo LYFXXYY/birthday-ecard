@@ -204,11 +204,16 @@ async function record() {
       }
       if (typeof window.isAutoPlaying !== 'undefined') window.isAutoPlaying = false;
 
-      if (typeof window.showScreen === 'function' && typeof window.screenOrder !== 'undefined' && window.screenOrder.length) {
-        window.showScreen(window.screenOrder[0]);
-      }
-      if (typeof window.CARD_SCREEN_ORDER !== 'undefined' && typeof window.showScreen === 'function') {
-        window.showScreen(window.CARD_SCREEN_ORDER[0]);
+      // 首页已从 HTML 默认激活，不调用 showScreen 避免重复触发 stagger 动画导致"跳3下"
+      // 仅确保首页动画已完成：移除 stagger 状态，让内容保持最终可见态
+      var firstPanel = document.querySelector('.screen.active .copy-panel');
+      if (firstPanel) {
+        firstPanel.classList.remove('stagger-animate');
+        firstPanel.querySelectorAll('.stagger-child').forEach(function(el) {
+          el.classList.remove('stagger-child');
+          el.style.animationDelay = '';
+          el.style.opacity = '1';
+        });
       }
 
       const style = document.createElement('style');
@@ -229,7 +234,11 @@ async function record() {
 
     console.log(`开始自动翻页录制，预计视频时长约 ${(screenOrder.length * PAGE_DURATION + TAIL_DURATION).toFixed(1)} 秒`);
 
-    for (let i = 0; i < screenOrder.length; i += 1) {
+    // 首页已激活，先等待首页时长
+    await page.waitForTimeout(Math.round(PAGE_DURATION * 1000));
+
+    // 从第2页开始翻页录制（跳过首页避免重复触发动画）
+    for (let i = 1; i < screenOrder.length; i += 1) {
       const screenName = screenOrder[i];
       await page.evaluate((sName) => {
         if (typeof window.showScreen === 'function') {
