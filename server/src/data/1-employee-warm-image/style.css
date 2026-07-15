@@ -346,6 +346,7 @@ h2 {
 
 .hero-copy,
 .message,
+.message-text,
 .signature-copy,
 .highlight-panel > p:not(.eyebrow):not(.support-note),
 .final-panel > p:not(.eyebrow) {
@@ -567,6 +568,7 @@ h2 {
 
   .hero-copy,
   .message,
+  .message-text,
   .signature-copy,
   .highlight-panel > p:not(.eyebrow):not(.support-note),
   .final-panel > p:not(.eyebrow) {
@@ -647,6 +649,7 @@ h2 {
 
   .hero-copy,
   .message,
+  .message-text,
   .signature-copy,
   .highlight-panel > p:not(.eyebrow):not(.support-note),
   .final-panel > p:not(.eyebrow) {
@@ -731,5 +734,20 @@ h2 {
 .brand-logo {
   height: 44px !important;
   max-width: 180px !important;
+}
+
+/* ===== 统一落款 ===== */
+.unified-signature {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  z-index: 10;
+  pointer-events: none;
 }
 

@@ -89,7 +89,7 @@ button {
   z-index: 0;
   object-fit: cover;
   transform: scale(1.075);
-  filter: brightness(1.14) saturate(1.14) contrast(1.02);
+  filter: brightness(1.04) saturate(1.04) contrast(1.02);
   transition: transform 6200ms ease, filter 840ms ease;
 }
 
@@ -398,5 +398,19 @@ h2 {
 .brand-logo {
   height: 44px !important;
   max-width: 180px !important;
+}
+
+.unified-signature {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  z-index: 10;
+  pointer-events: none;
 }
 

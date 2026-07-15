@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { success, error } from '../utils/response.js';
@@ -79,10 +80,68 @@ publicRouter.use('/asset/:folderPath', async (req, res, next) => {
       return res.status(403).send('Forbidden');
     }
 
-    await fs.access(resolvedFull);
+    const stat = await fs.stat(resolvedFull);
+    // 目录请求自动返回 index.html（预览重定向需要）
+    if (stat.isDirectory()) {
+      const indexPath = path.join(resolvedFull, 'index.html');
+      if (!existsSync(indexPath)) {
+        return res.status(404).send('Not found');
+      }
+      return res.sendFile(indexPath);
+    }
+
     res.sendFile(resolvedFull);
   } catch (err) {
     res.status(404).send('Not found');
+  }
+});
+
+// GET /api/templates/:id/preview - 预览模板渲染效果（公开，iframe 无法携带 Authorization）
+// 方案：302 重定向到 asset 端点，让浏览器从模板目录加载原始 HTML，
+// 所有相对路径（style.css、script.js、../logo.svg、../music/music.mp3）自然生效
+publicRouter.get('/:id/preview', async (req, res) => {
+  try {
+    const template = await Template.findByPk(req.params.id);
+
+    if (!template) {
+      return res.status(404).send('模板不存在');
+    }
+
+    if (template.folder_path) {
+      // 重定向到 asset 端点，目录请求会自动返回 index.html
+      return res.redirect(`/api/templates/asset/${template.folder_path}/`);
+    }
+
+    // 旧版单文件 HTML 模板（html_content），直接替换占位符后返回
+    if (!template.html_content) {
+      return res.status(400).send('模板无可预览内容');
+    }
+
+    const now = new Date();
+    const replacements = {
+      '{{name}}': '张建国',
+      '{{department}}': '综合管理部',
+      '{{position}}': '总经理',
+      '{{birthday}}': '7月12日',
+      '{{sender}}': '公司工会',
+      '{{company}}': '公司工会',
+      '{{logo_url}}': '',
+      '{{blessing}}': '祝你生日快乐，万事如意！',
+      '{{title}}': '张建国的生日贺卡',
+      '{{year}}': now.getFullYear().toString(),
+      '{{month}}': (now.getMonth() + 1).toString(),
+      '{{day}}': now.getDate().toString(),
+      '{{music_url}}': '../music/music.mp3',
+      '{{message}}': '恭祝您生日快乐，愿您事业蒸蒸日上，生活幸福美满！',
+      '{{year_note}}': '岁序更新，美好常在'
+    };
+    let html = template.html_content;
+    for (const [placeholder, value] of Object.entries(replacements)) {
+      html = html.replaceAll(placeholder, value);
+    }
+    return res.type('text/html').send(html);
+  } catch (err) {
+    res.status(500).send('预览失败: ' + err.message);
   }
 });
 
@@ -282,67 +341,6 @@ router.delete('/:id', async (req, res) => {
     success(res, null, refCount > 0 ? `删除成功，已解除 ${refCount} 位员工的关联` : '删除成功');
   } catch (err) {
     error(res, err.message);
-  }
-});
-
-// GET /api/templates/:id/preview - 预览模板渲染效果
-router.get('/:id/preview', async (req, res) => {
-  try {
-    const template = await Template.findByPk(req.params.id, {
-      include: [{ model: Blessing, as: 'default_blessing' }]
-    });
-
-    if (!template) {
-      return error(res, '模板不存在', 404);
-    }
-
-    const now = new Date();
-    const replacements = {
-      '{{name}}': '张三',
-      '{{department}}': '技术部',
-      '{{position}}': '工程师',
-      '{{birthday}}': '6月15日',
-      '{{sender}}': '公司工会',
-      '{{company}}': '公司工会',
-      '{{logo_url}}': '',
-      '{{blessing}}': template.default_blessing?.content || '祝你生日快乐，万事如意！',
-      '{{title}}': '张三的生日贺卡',
-      '{{year}}': now.getFullYear().toString(),
-      '{{month}}': (now.getMonth() + 1).toString(),
-      '{{day}}': now.getDate().toString(),
-      '{{music_url}}': '../music/music.mp3',
-      '{{message}}': '恭祝您生日快乐，愿您事业蒸蒸日上，生活幸福美满！',
-      '{{year_note}}': '岁序更新，美好常在'
-    };
-
-    if (template.folder_path) {
-      const templateDir = path.join(DATA_DIR, template.folder_path);
-      const indexPath = path.join(templateDir, 'index.html');
-
-      try {
-        let html = await fs.readFile(indexPath, 'utf-8');
-        for (const [placeholder, value] of Object.entries(replacements)) {
-          html = html.replaceAll(placeholder, value);
-        }
-        res.type('text/html').send(html);
-      } catch (err) {
-        return error(res, '模板文件夹内 index.html 读取失败: ' + err.message, 500);
-      }
-      return;
-    }
-
-    if (!template.html_content) {
-      return error(res, '模板无可预览内容', 400);
-    }
-
-    let html = template.html_content;
-    for (const [placeholder, value] of Object.entries(replacements)) {
-      html = html.replaceAll(placeholder, value);
-    }
-
-    res.type('text/html').send(html);
-  } catch (err) {
-    error(res, err.message, 500);
   }
 });
 

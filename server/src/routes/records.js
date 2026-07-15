@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
       include: [{
         model: Employee,
         as: 'employee',
-        attributes: ['name', 'department', 'phone', 'level']
+        attributes: ['name', 'department', 'phone', 'level', 'gender']
       }, {
         model: Template,
         as: 'template',
@@ -54,9 +54,24 @@ router.get('/', async (req, res) => {
       offset,
       limit: sizeNum
     });
-    
+
+    // 加载 CSP 配置获取视频模板 ID
+    let videoTemplateId = '';
+    try {
+      const { loadCspConfig } = await import('../config/carrier-sms.config.js');
+      videoTemplateId = loadCspConfig().videoTemplateId || '';
+    } catch {
+      // 配置加载失败时留空
+    }
+
+    // 为每条记录附加短信模板ID
+    const enrichedRows = rows.map(row => ({
+      ...row.toJSON(),
+      video_template_id: videoTemplateId
+    }));
+
     success(res, {
-      list: rows,
+      list: enrichedRows,
       total: count,
       page: pageNum,
       pageSize: sizeNum

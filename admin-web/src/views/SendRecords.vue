@@ -94,13 +94,18 @@
                     {{ getLevelText(row.employee?.level) }}
                   </el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="使用模板">{{ row.template?.name || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="失败原因">
-                  <span v-if="row.error_message" class="error-text">{{ row.error_message }}</span>
+                <el-descriptions-item label="短信模板ID">
+                  <el-tag v-if="row.video_template_id" type="info" size="small">{{ row.video_template_id }}</el-tag>
+                  <span v-else class="text-muted">未配置</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="姓名">{{ row.employee?.name || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="性别">
+                  <span v-if="row.employee?.gender === 'male'">先生</span>
+                  <span v-else-if="row.employee?.gender === 'female'">女士</span>
                   <span v-else>-</span>
                 </el-descriptions-item>
-                <el-descriptions-item label="短信内容" :span="2">
-                  <div class="sms-content-full" v-if="row.sms_content">{{ row.sms_content }}</div>
+                <el-descriptions-item label="失败原因">
+                  <span v-if="row.error_message" class="error-text">{{ row.error_message }}</span>
                   <span v-else>-</span>
                 </el-descriptions-item>
               </el-descriptions>
@@ -591,29 +596,6 @@ onMounted(() => {
 .text-muted {
   color: #c0c4cc;
   font-size: 13px;
-}
-
-/* 短信内容样式 */
-.sms-content {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #606266;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sms-content-full {
-  font-size: 13px;
-  line-height: 1.6;
-  color: #606266;
-  word-break: break-all;
-}
-
-.sms-empty {
-  color: #c0c4cc;
 }
 
 /* 展开内容样式 */

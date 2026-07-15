@@ -29,7 +29,6 @@ import smsConfigRoutes from './routes/smsConfig.js';
 import { authMiddleware } from './middlewares/auth.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
-import { initTestEmployees } from './utils/initTestEmployees.js';
 import { getLogger } from './utils/logger.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
 import migrateDatabase from './utils/migrate.js';
@@ -192,7 +191,6 @@ const startServer = async () => {
 
     await initDefaultAdmin();
     await initDefaultTemplate();
-    await initTestEmployees();
 
     // 启动定时任务
     startBirthdayScheduler();

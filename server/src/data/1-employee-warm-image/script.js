@@ -1,4 +1,4 @@
-const bgMusic = "{{music_url}}";
+const bgMusic = "";
 const localMusic = "../music/music.mp3";
 
 const screenOrder = ["cover", "wish", "highlight", "final"];
@@ -495,7 +495,7 @@ document.addEventListener("visibilitychange", () => {
 //  逗号断行：以逗号/分号为界换行，移除标点
 // ========================================================
 function formatBlessingText() {
-  var selectors = "h2, .hero-copy, .message, .signature-copy, "
+  var selectors = "h2, .hero-copy, .message, .message-text, .signature-copy, "
     + ".highlight-panel > p:not(.eyebrow):not(.support-note), "
     + ".final-panel > p:not(.eyebrow)";
 

@@ -17,11 +17,14 @@ export interface SendRecord {
   delivery_status?: string | null
   delivery_time?: string | null
   created_at?: string
+  // 短信展示信息（后端附加）
+  video_template_id?: string
   employee?: {
     name: string
     phone: string
     department?: string
     level?: string
+    gender?: 'male' | 'female'
   }
   template?: {
     name: string

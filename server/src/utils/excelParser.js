@@ -18,6 +18,26 @@ const convertGender = (value) => {
 };
 
 /**
+ * 职级转换：将中文转换为英文枚举
+ * 管理层 → management，三级经理 → manager，普通员工 → employee
+ */
+const convertLevel = (value) => {
+  if (!value) return 'employee'; // 默认普通员工
+  const v = String(value).trim();
+  const map = {
+    '管理层': 'management',
+    'management': 'management',
+    '三级经理': 'manager',
+    '经理': 'manager',
+    'manager': 'manager',
+    '普通员工': 'employee',
+    '员工': 'employee',
+    'employee': 'employee'
+  };
+  return map[v] || 'employee';
+};
+
+/**
  * 解析日期为 YYYY-MM-DD 格式
  */
 const parseDate = (value) => {
@@ -89,7 +109,8 @@ export const parseEmployeeExcel = (filePath, originalName) => {
     birthday: parseDate(row['生日'] || row['birthday']),
     phone: String(row['手机号'] || row['phone'] || '').trim(),
     department: row['部门'] || row['department'] || '',
-    position: row['职位'] || row['position'] || ''
+    position: row['职位'] || row['position'] || '',
+    level: convertLevel(row['职级'] || row['level'])
   }));
 };
 

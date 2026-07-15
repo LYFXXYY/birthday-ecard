@@ -50,6 +50,10 @@
 
             <!-- 操作按钮 -->
             <div class="template-actions">
+              <el-button type="primary" @click="handlePreview(template)">
+                <el-icon><View /></el-icon>
+                预览
+              </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
                 编辑
@@ -69,12 +73,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Delete, Connection } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete, Connection, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
 
 const router = useRouter()
+
+const handlePreview = (template: Template) => {
+  if (!template.id) return
+  window.open(`/api/templates/${template.id}/preview`, '_blank')
+}
 
 // 模板列表
 const templates = ref<Template[]>([])

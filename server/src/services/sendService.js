@@ -17,13 +17,16 @@ const logger = getLogger('send');
 
 /**
  * 构建短信/彩信内容文本
- * 包含祝福语正文 + 绝对链接（短信需要完整 URL 才能点击）
- * cardGenerator 返回的是相对路径，这里拼接 config.baseUrl 转为绝对路径
+ *
+ * CSP 5G 视频短信使用模板 ID 发送，实际内容由中国移动模板决定。
+ * sms_content 字段用于记录展示，格式为"姓名+先生/女士"，方便管理员确认发送对象。
  */
-const buildSmsBody = (employeeName, blessingText, videoUrl, cardUrl) => {
-  const relativeLink = videoUrl || cardUrl;
-  const absoluteLink = relativeLink ? `${config.baseUrl}${relativeLink}` : '';
-  return `亲爱的${employeeName}，祝您生日快乐！${blessingText}\n${absoluteLink}`;
+const buildSmsBody = (employeeName, employeeGender, videoTemplateId) => {
+  const genderTitle = employeeGender === 'male' ? '先生' : '女士';
+  const recipient = `${employeeName}${genderTitle}`;
+  return videoTemplateId
+    ? `【视频短信】收件人：${recipient}，模板ID：${videoTemplateId}`
+    : `【贺卡通知】收件人：${recipient}`;
 };
 
 /**
@@ -129,8 +132,9 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
     logger.info(`[发送服务] 贺卡生成完成：视频${videoOk ? '已生成' : videoAttempted ? '录制失败' : '未录制（旧模板）'}`);
 
     // 4. 创建发送记录
-    const blessingText = template.default_blessing?.content || '生日快乐！愿你永远开心如意！';
-    const smsBody = buildSmsBody(employeeName, blessingText, cardResult.videoUrl, cardResult.cardUrl);
+    const { loadCspConfig } = await import('../config/carrier-sms.config.js');
+    const videoTemplateId = loadCspConfig().videoTemplateId || '';
+    const smsBody = buildSmsBody(employeeName, employee.gender, videoTemplateId);
     const record = await sequelize.transaction(async (t) => {
       const initialStatus = videoAttempted && !videoOk ? 'failed' : (videoOk ? 'recorded' : 'pending');
       const newRecord = await SendRecord.create({
@@ -144,8 +148,7 @@ export const sendBirthdayCard = async ({ employeeId, adminId = null, skipIfSentT
         send_status: initialStatus,
         send_time: new Date(),
         admin_id: adminId,
-        sms_content: smsBody,
-        blessing_content: blessingText
+        sms_content: smsBody
       }, { transaction: t });
 
       // 5. 发送短信/彩信（视频失败时仍发送贺卡链接作为兜底）

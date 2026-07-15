@@ -11,8 +11,8 @@ export default defineConfig({
     }
   },
   server: {
-    host: '0.0.0.0', // 允许外部访问
-    port: 5173, // 前端开发服务器端口（不能与后端 3000 冲突）
+    host: '127.0.0.1',
+    port: 5173, // 前端开发服务器端口（避开 Hyper-V 保留段 5041-5242）
     open: true, // 自动打开浏览器
     cors: true, // 允许跨域
     proxy: {
