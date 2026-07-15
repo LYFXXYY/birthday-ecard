@@ -1,4 +1,4 @@
-const bgMusic = "{{music_url}}";
+const bgMusic = "";
 const localMusic = "../music/music.mp3";
 
 const screenOrder = ["cover", "identity", "message", "honor", "reflection", "signoff", "final"];

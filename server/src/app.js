@@ -3,11 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs/promises';
-<<<<<<< HEAD
-import { fork } from 'child_process';
-=======
 import { existsSync, readFileSync } from 'fs';
->>>>>>> 17558c3a3980aaa6b4144dd671fa43739dde3212
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import cron from 'node-cron';
@@ -44,80 +40,6 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-<<<<<<< HEAD
-// ========== 守护进程管理 ==========
-let watchdogProcess = null;
-let shuttingDown = false;
-
-function startWatchdog() {
-  if (shuttingDown) return;
-  if (!config.watchdog.enabled) {
-    logger.info('[守护进程] 已通过配置禁用');
-    return;
-  }
-
-  const watchdogPath = path.join(__dirname, 'watchdog.js');
-  watchdogProcess = fork(watchdogPath, [], { cwd: process.cwd() });
-
-  watchdogProcess.on('exit', (code, signal) => {
-    logger.warn(`[守护进程] 已退出，code=${code}, signal=${signal}`);
-    watchdogProcess = null;
-    if (!shuttingDown) {
-      const delay = config.watchdog.restartDelayMs;
-      logger.info(`[守护进程] 将在 ${delay / 1000}s 后重启...`);
-      setTimeout(startWatchdog, delay);
-    }
-  });
-
-  watchdogProcess.on('error', (err) => {
-    logger.error(`[守护进程] 启动失败: ${err.message}`);
-    watchdogProcess = null;
-  });
-
-  logger.info(`[守护进程] 已启动，PID=${watchdogProcess.pid}`);
-}
-
-function startWatchdogMonitor() {
-  if (!config.watchdog.enabled) return;
-  const checkInterval = config.watchdog.intervalSeconds * 1000;
-  const staleThreshold = checkInterval * 3;
-
-  setInterval(async () => {
-    if (!watchdogProcess || shuttingDown) return;
-    try {
-      const hbPath = path.join(__dirname, '..', 'heartbeats', 'watchdog.json');
-      const content = await fs.readFile(hbPath, 'utf-8');
-      const data = JSON.parse(content);
-      const elapsed = Date.now() - new Date(data.last_beat).getTime();
-      if (elapsed > staleThreshold) {
-        logger.warn(`[守护进程] 心跳超时 (${(elapsed / 1000).toFixed(0)}s)，正在重启...`);
-        watchdogProcess.kill('SIGTERM');
-      }
-    } catch {
-      // 文件不存在或解析失败，首次启动时正常
-    }
-  }, checkInterval);
-}
-
-function gracefulShutdown(signal) {
-  if (shuttingDown) return;
-  shuttingDown = true;
-  logger.info(`[服务器] 收到 ${signal}，正在关闭...`);
-
-  if (watchdogProcess) {
-    watchdogProcess.send('shutdown');
-    setTimeout(() => {
-      if (watchdogProcess) watchdogProcess.kill('SIGKILL');
-      process.exit(0);
-    }, 3000);
-  } else {
-    process.exit(0);
-  }
-}
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-=======
 // ========== 监控进程管理 ==========
 let monitorProcess = null;
 const monitorPidFile = path.resolve(__dirname, '..', 'monitor', 'monitor.pid');
@@ -205,7 +127,6 @@ process.on('SIGINT', () => {
   cleanupMonitor();
   process.exit(0);
 });
->>>>>>> 17558c3a3980aaa6b4144dd671fa43739dde3212
 
 // 确保必要的目录存在
 async function ensureDirectories() {
@@ -283,11 +204,6 @@ const startServer = async () => {
 
     app.listen(config.port, () => {
       logger.info(`[服务器] 运行在 http://localhost:${config.port}`);
-<<<<<<< HEAD
-      // 启动守护进程
-      startWatchdog();
-      startWatchdogMonitor();
-=======
       // 启动独立监控进程
       spawnMonitor();
 
@@ -295,7 +211,6 @@ const startServer = async () => {
       cron.schedule('*/2 * * * *', () => {
         checkMonitor();
       });
->>>>>>> 17558c3a3980aaa6b4144dd671fa43739dde3212
     });
   } catch (err) {
     logger.error('[启动失败]', err);
