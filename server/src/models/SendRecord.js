@@ -105,7 +105,13 @@ const SendRecord = sequelize.define('SendRecord', {
   tableName: 'send_records',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: false
+  updatedAt: false,
+  indexes: [
+    { fields: ['employee_id'] },
+    { fields: ['send_status'] },
+    { fields: ['send_time'] },
+    { fields: ['message_id'] }
+  ]
 });
 
 export default SendRecord;

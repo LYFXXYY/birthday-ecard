@@ -65,7 +65,12 @@ const Template = sequelize.define('Template', {
   tableName: 'templates',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  indexes: [
+    { fields: ['employee_level'] },
+    { fields: ['is_active'] },
+    { fields: ['folder_path'] }
+  ]
 });
 
 export default Template;

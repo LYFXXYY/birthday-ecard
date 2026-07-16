@@ -6,11 +6,21 @@ import { generateToken, verifyToken } from '../utils/jwt.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { validatePassword } from '../utils/passwordValidator.js';
 import { config } from '../config/index.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
+// 登录接口速率限制：10次/分钟/IP（防止暴力破解）
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { code: 429, message: '登录尝试过于频繁，请1分钟后再试' }
+});
+
 // POST /api/auth/login - 登录
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -80,7 +90,8 @@ router.post('/login', async (req, res) => {
       password_expired: passwordExpired
     }, '登录成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[登录] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -97,7 +108,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
 
     success(res, admin);
   } catch (err) {
-    error(res, err.message);
+    console.error('[获取用户信息] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -113,6 +125,9 @@ router.post('/change-password', authMiddleware, async (req, res) => {
     }
 
     const admin = await Admin.findByPk(req.user.id);
+    if (!admin) {
+      return error(res, '管理员不存在', 404);
+    }
     const isValid = await comparePassword(oldPassword, admin.password_hash);
 
     if (!isValid) {
@@ -131,7 +146,8 @@ router.post('/change-password', authMiddleware, async (req, res) => {
 
     success(res, null, '密码修改成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[修改密码] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -145,11 +161,15 @@ router.post('/verify-password', authMiddleware, async (req, res) => {
     }
 
     const admin = await Admin.findByPk(req.user.id);
+    if (!admin) {
+      return error(res, '管理员不存在', 404);
+    }
     const isValid = await comparePassword(password, admin.password_hash);
 
     success(res, { valid: isValid });
   } catch (err) {
-    error(res, err.message);
+    console.error('[验证密码] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -164,7 +184,8 @@ router.post('/logout', authMiddleware, async (req, res) => {
 
     success(res, null, '退出登录成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[退出登录] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 

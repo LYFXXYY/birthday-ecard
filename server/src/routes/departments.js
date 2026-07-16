@@ -50,7 +50,8 @@ router.get('/tree', async (req, res) => {
     const tree = buildTree(departments);
     success(res, tree);
   } catch (err) {
-    error(res, err.message);
+    console.error('[部门树] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -67,7 +68,8 @@ router.get('/', async (req, res) => {
     });
     success(res, departments);
   } catch (err) {
-    error(res, err.message);
+    console.error('[部门列表] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -82,7 +84,8 @@ router.get('/:id', async (req, res) => {
     }
     success(res, department);
   } catch (err) {
-    error(res, err.message);
+    console.error('[部门详情] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -114,10 +117,11 @@ router.post('/', async (req, res) => {
     }
 
     const department = await Department.create(data);
-    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Department', model_id: department.id, details: { name: department.name } });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Department', model_id: department.id, details: { name: department.name } }).catch(console.error);
     success(res, department, '添加成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[新增部门] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -154,10 +158,11 @@ router.put('/:id', async (req, res) => {
     }
 
     await department.update(data);
-    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Department', model_id: parseInt(req.params.id) });
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Department', model_id: parseInt(req.params.id) }).catch(console.error);
     success(res, department, '修改成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[修改部门] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -182,10 +187,11 @@ router.delete('/:id', async (req, res) => {
     }
 
     await department.destroy();
-    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Department', model_id: parseInt(req.params.id), details: { name: department.name } });
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Department', model_id: parseInt(req.params.id), details: { name: department.name } }).catch(console.error);
     success(res, null, '删除成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[删除部门] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 

@@ -50,7 +50,6 @@
             accept=".xlsx,.xls,.csv"
             :on-change="handleFileChange"
             :on-exceed="handleExceed"
-            :before-upload="beforeUpload"
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">
@@ -123,14 +122,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { Back, Download, UploadFilled, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { importEmployees } from '@/api/employees'
 import * as XLSX from 'xlsx'
-
-const router = useRouter()
 
 // 选中的文件
 const selectedFile = ref<File | null>(null)
@@ -151,9 +147,10 @@ const importResult = ref<ImportResult | null>(null)
 const downloadTemplate = () => {
   // 创建工作簿数据
   const worksheetData = [
-    ['姓名', '性别', '生日', '手机号', '部门', '职位'],
-    ['张三', 'male', '1990-01-01', '13800138000', '技术部', '工程师'],
-    ['李四', 'female', '1992-05-15', '13900139000', '市场部', '专员']
+    ['姓名', '性别', '生日', '手机号', '部门', '职级', '职位'],
+    ['张三', '男', '1990-01-01', '13800138000', '技术部', '普通员工', '工程师'],
+    ['李四', '女', '1992-05-15', '13900139000', '市场部', '三级经理', '市场部经理'],
+    ['王五', '男', '1985-03-20', '13700137000', '综合管理部', '管理层', '总经理']
   ]
 
   // 创建工作表
@@ -166,6 +163,7 @@ const downloadTemplate = () => {
     { wch: 12 }, // 生日
     { wch: 15 }, // 手机号
     { wch: 15 }, // 部门
+    { wch: 12 }, // 职级
     { wch: 15 }  // 职位
   ]
 
@@ -179,29 +177,30 @@ const downloadTemplate = () => {
   ElMessage.success('模板下载成功')
 }
 
-// 文件改变
+// 文件改变（含校验，因 auto-upload=false 不会触发 beforeUpload）
 const handleFileChange = (file: UploadFile) => {
-  selectedFile.value = file.raw || null
+  const raw = file.raw
+  if (!raw) return
+
+  // 格式校验
+  const isXlsx = raw.name.endsWith('.xlsx') || raw.name.endsWith('.xls') || raw.name.endsWith('.csv')
+  if (!isXlsx) {
+    ElMessage.error('仅支持 .xlsx、.xls 或 .csv 格式')
+    return
+  }
+  // 大小校验
+  const isLt10M = raw.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过 10MB')
+    return
+  }
+
+  selectedFile.value = raw
 }
 
 // 文件超出限制
 const handleExceed = () => {
   ElMessage.warning('只能上传一个文件')
-}
-
-// 上传前校验
-const beforeUpload = (file: File) => {
-  const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')
-  if (!isXlsx) {
-    ElMessage.error('仅支持 .xlsx、.xls 或 .csv 格式')
-    return false
-  }
-  const isLt10M = file.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB')
-    return false
-  }
-  return true
 }
 
 // 清除文件

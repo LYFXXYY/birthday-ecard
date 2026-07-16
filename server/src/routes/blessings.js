@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { literal } from 'sequelize';
 import { success, error } from '../utils/response.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { Blessing, Template } from '../models/index.js';
@@ -37,24 +38,25 @@ router.get('/', async (req, res) => {
     if (req.query.is_active !== undefined) {
       where.is_active = req.query.is_active === '1' || req.query.is_active === 'true';
     }
-    const blessings = await Blessing.findAll({ where, order: [['created_at', 'DESC']] });
+    const blessings = await Blessing.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+      attributes: {
+        include: [
+          [literal('(SELECT COUNT(*) FROM `templates` WHERE `templates`.`default_blessing_id` = `Blessing`.`id`)'), 'template_count']
+        ]
+      }
+    });
 
-    // 为每条祝福语查询引用它的模板数量
-    const blessingsWithCount = await Promise.all(
-      blessings.map(async (blessing) => {
-        const templateCount = await Template.count({
-          where: { default_blessing_id: blessing.id }
-        });
-        return {
-          ...blessing.toJSON(),
-          template_count: templateCount
-        };
-      })
-    );
+    const blessingsWithCount = blessings.map(b => ({
+      ...b.toJSON(),
+      template_count: parseInt(b.get('template_count')) || 0
+    }));
 
     success(res, blessingsWithCount);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[祝福语列表] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -67,7 +69,8 @@ router.get('/:id', async (req, res) => {
     }
     success(res, blessing);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[祝福语详情] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -75,10 +78,11 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const blessing = await Blessing.create(sanitizeInput(req.body));
-    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Blessing', model_id: blessing.id, details: { content: blessing.content?.substring(0, 50) } });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Blessing', model_id: blessing.id, details: { content: blessing.content?.substring(0, 50) } }).catch(console.error);
     success(res, blessing, '添加成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[新增祝福语] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -92,10 +96,11 @@ router.put('/:id', async (req, res) => {
     if (!updated) {
       return error(res, '祝福语不存在', 404);
     }
-    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Blessing', model_id: parseInt(req.params.id) });
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Blessing', model_id: parseInt(req.params.id) }).catch(console.error);
     success(res, null, '修改成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[修改祝福语] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -117,10 +122,11 @@ router.delete('/:id', async (req, res) => {
     if (!deleted) {
       return error(res, '祝福语不存在', 404);
     }
-    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Blessing', model_id: parseInt(req.params.id) });
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Blessing', model_id: parseInt(req.params.id) }).catch(console.error);
     success(res, null, refCount > 0 ? `删除成功，已解除 ${refCount} 个模板的关联` : '删除成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[删除祝福语] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 

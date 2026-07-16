@@ -1,11 +1,12 @@
+// ESM 静态 import 会被提升先于模块体执行，app.js 的 dotenv.config() 在本模块之后才运行。
+// 因此数据库模块必须自行加载 .env，确保 process.env 中有数据库连接参数。
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// ES 模块中 import 先于模块体执行，必须在此处提前加载 .env
-const __dbFile = fileURLToPath(import.meta.url);
-const __dbDir = path.dirname(__dbFile);
-dotenv.config({ path: path.join(__dbDir, '../../.env') });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
 import { Sequelize } from 'sequelize';
 

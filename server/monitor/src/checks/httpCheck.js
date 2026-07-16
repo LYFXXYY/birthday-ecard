@@ -12,7 +12,7 @@ import { URL } from 'url';
  * 执行 HTTP 健康检查
  *
  * @param {object} config - 主项目配置
- * @param {string} config.baseUrl - 如 http://localhost:3000
+ * @param {string} config.baseUrl - 如 http://localhost:3001
  * @param {string} config.healthEndpoint - 如 /api/monitor/status
  * @returns {Promise<{module: string, name: string, status: string, message: string, responseTime?: number}>}
  */

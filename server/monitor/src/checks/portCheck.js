@@ -11,7 +11,7 @@ import net from 'net';
  *
  * @param {object} config - 主项目配置
  * @param {string} config.host - 如 http://localhost
- * @param {number} config.port - 如 3000
+ * @param {number} config.port - 如 3001
  * @returns {Promise<{module: string, name: string, status: string, message: string, responseTime?: number}>}
  */
 export const portCheck = async (config) => {

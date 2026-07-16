@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/user'
 
 // 创建axios实例
 const request: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
   timeout: 30000
   // 不设置默认 Content-Type，让 axios 根据请求体自动判断
 })
@@ -52,6 +52,7 @@ request.interceptors.response.use(
     // 处理HTTP错误
     if (error.response) {
       const { status, data } = error.response
+      console.warn('[请求拦截器] HTTP错误:', status, data?.message || '')
 
       // 400 且包含验证错误详情时，不弹全局提示，将数据透传给调用方处理
       if (status === 400 && data?.data?.errors) {
@@ -60,6 +61,7 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
+          console.warn('[请求拦截器] 401 - 清除认证并跳转登录')
           ElMessage.error('登录已过期，请重新登录')
           // 清除认证信息并跳转登录页
           const userStore = useUserStore()

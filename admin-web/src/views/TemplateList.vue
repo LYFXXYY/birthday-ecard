@@ -50,6 +50,10 @@
 
             <!-- 操作按钮 -->
             <div class="template-actions">
+              <el-button type="primary" @click="handlePreview(template)">
+                <el-icon><View /></el-icon>
+                预览
+              </el-button>
               <el-button type="warning" @click="handleEdit(template)">
                 <el-icon><Edit /></el-icon>
                 编辑
@@ -69,27 +73,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Picture, Edit, Delete, Connection } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete, Connection, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
+import { getLevelText } from '@/utils/constants'
 
 const router = useRouter()
+
+const handlePreview = (template: Template) => {
+  if (!template.id) return
+  window.open(`/api/templates/${template.id}/preview`, '_blank')
+}
 
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
-
-// 获取员工级别文字
-const getLevelText = (level?: string | null) => {
-  const levelMap: Record<string, string> = {
-    management: '管理层',
-    manager: '三级经理',
-    employee: '普通员工',
-    all: '通用'
-  }
-  return levelMap[level || 'all'] || '通用'
-}
 
 // 获取缩略图URL
 const getThumbnailUrl = (template: Template) => {

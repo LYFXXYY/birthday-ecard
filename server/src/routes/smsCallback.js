@@ -53,16 +53,26 @@ router.post('/StatusReportNotification/:chatbotUri', async (req, res) => {
       return res.status(200).json({ code: 200, message: 'empty body' });
     }
 
+    // 来源验证：记录非预期来源的请求（不阻断，仅告警）
+    const sourceIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+    logger.info(`[CSP回调] 来源IP: ${sourceIp}`);
+
     // 解析 XML 字段
     const messageId = extractXmlValue(xmlBody, 'messageId');
     const status = extractXmlValue(xmlBody, 'status');
     const time = extractXmlValue(xmlBody, 'time');
+    const correlator = extractXmlValue(xmlBody, 'correlator');
 
     logger.info(`[CSP回调] messageId=${messageId}, status=${status}, time=${time}`);
 
+    // 验证必要字段存在
     if (!messageId) {
-      logger.warn('[CSP回调] 缺少 messageId');
+      logger.warn(`[CSP回调] 缺少 messageId, correlator=${correlator}, 来源IP=${sourceIp}`);
       return res.status(200).json({ code: 200, message: 'missing messageId' });
+    }
+
+    if (!status) {
+      logger.warn(`[CSP回调] 缺少 status 字段, messageId=${messageId}, 来源IP=${sourceIp}`);
     }
 
     // 查找对应的发送记录

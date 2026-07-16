@@ -56,6 +56,4 @@ build/
 # 代码审查与开发文档（不推送）
 代码审查与优化总结报告.md
 生日贺卡项目开发文档.md
-server/heartbeats/monitor.json
 agents.md
-项目改进说明与修改打算.md

@@ -29,7 +29,6 @@ import smsConfigRoutes from './routes/smsConfig.js';
 import { authMiddleware } from './middlewares/auth.js';
 import initDefaultAdmin from './utils/initAdmin.js';
 import initDefaultTemplate from './utils/initDefaultTemplate.js';
-import { initTestEmployees } from './utils/initTestEmployees.js';
 import { getLogger } from './utils/logger.js';
 import { startBirthdayScheduler } from './services/scheduler.js';
 import migrateDatabase from './utils/migrate.js';
@@ -140,8 +139,40 @@ async function ensureDirectories() {
   }
 }
 
-// 中间件
-app.use(cors());
+// 中间件 — CORS 白名单
+// 允许 localhost（任意端口）+ 指定内网 IP（任意端口）+ 环境变量自定义
+const ALLOWED_HOSTS = [
+  'localhost',
+  '127.0.0.1',
+  '192.168.233.1',
+  '192.168.134.1',
+  '10.201.211.9',
+  '172.23.96.1'
+];
+
+// 从环境变量读取额外允许的域名（逗号分隔）
+const extraOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+  : [];
+
+const corsOriginCheck = (origin, callback) => {
+  // 允许无 origin（如 curl、服务器间调用）
+  if (!origin) return callback(null, true);
+
+  try {
+    const url = new URL(origin);
+    const host = url.hostname;
+    const isAllowed = ALLOWED_HOSTS.includes(host) || extraOrigins.includes(origin);
+    callback(null, isAllowed);
+  } catch {
+    callback(null, false);
+  }
+};
+
+app.use(cors({
+  origin: corsOriginCheck,
+  credentials: true
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
@@ -152,9 +183,15 @@ app.use('/uploads', express.static(path.join(__dirname, '..', '..', 'uploads')))
 app.get('/api/health', async (req, res) => {
   try {
     await sequelize.query('SELECT 1');
+<<<<<<< HEAD
     res.json({ code: 200, message: 'OK', data: { status: 'healthy', timestamp: new Date() } });
   } catch (err) {
     res.status(503).json({ code: 503, message: 'Service Unhealthy', data: { status: 'unhealthy', error: err.message, timestamp: new Date() } });
+=======
+    res.json({ code: 200, message: 'OK', data: { status: 'healthy', database: 'connected', timestamp: new Date() } });
+  } catch (err) {
+    res.status(503).json({ code: 503, message: '数据库连接异常', data: { status: 'unhealthy', database: 'disconnected', timestamp: new Date() } });
+>>>>>>> d451e6b32339b7be6c1dde6e75ebcda510d7749d
   }
 });
 
@@ -197,7 +234,6 @@ const startServer = async () => {
 
     await initDefaultAdmin();
     await initDefaultTemplate();
-    await initTestEmployees();
 
     // 启动定时任务
     startBirthdayScheduler();

@@ -17,11 +17,14 @@ export interface SendRecord {
   delivery_status?: string | null
   delivery_time?: string | null
   created_at?: string
+  // 短信展示信息（后端附加）
+  video_template_id?: string
   employee?: {
     name: string
     phone: string
     department?: string
     level?: string
+    gender?: 'male' | 'female'
   }
   template?: {
     name: string
@@ -56,8 +59,15 @@ export const getRecordStats = (): Promise<RecordStats> => {
   return request.get('/records/stats')
 }
 
+// 测试发送结果
+export interface TestSendResult {
+  smsStatus: string
+  message?: string
+  record?: SendRecord
+}
+
 // 测试发送（涉及视频录制和编码，耗时较长）
-export const testSend = (employeeId: number): Promise<any> => {
+export const testSend = (employeeId: number): Promise<TestSendResult> => {
   return request.post(`/records/test-send/${employeeId}`, null, { timeout: 300000 })
 }
 
