@@ -1,6 +1,8 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
+// TODO: department 文本字段与 department_id 外键存在双写不一致风险
+// 长期计划：迁移为仅使用 department_id，department 文本字段标记为 deprecated
 const Employee = sequelize.define('Employee', {
   id: {
     type: DataTypes.INTEGER,
@@ -64,7 +66,8 @@ const Employee = sequelize.define('Employee', {
   indexes: [
     { fields: ['birthday'] },
     { fields: ['department_id'] },
-    { fields: ['level'] }
+    { fields: ['level'] },
+    { fields: ['phone'] }
   ]
 });
 

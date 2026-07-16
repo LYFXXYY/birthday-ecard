@@ -77,6 +77,7 @@ import { Picture, Edit, Delete, Connection, View } from '@element-plus/icons-vue
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplateList, deleteTemplate, backfillBlessings } from '@/api/templates'
 import type { Template } from '@/api/templates'
+import { getLevelText } from '@/utils/constants'
 
 const router = useRouter()
 
@@ -88,17 +89,6 @@ const handlePreview = (template: Template) => {
 // 模板列表
 const templates = ref<Template[]>([])
 const loading = ref(false)
-
-// 获取员工级别文字
-const getLevelText = (level?: string | null) => {
-  const levelMap: Record<string, string> = {
-    management: '管理层',
-    manager: '三级经理',
-    employee: '普通员工',
-    all: '通用'
-  }
-  return levelMap[level || 'all'] || '通用'
-}
 
 // 获取缩略图URL
 const getThumbnailUrl = (template: Template) => {

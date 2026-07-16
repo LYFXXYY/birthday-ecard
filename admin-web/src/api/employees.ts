@@ -55,8 +55,20 @@ export const deleteEmployee = (id: number) => {
   return request.delete(`/employees/${id}`)
 }
 
+// Excel 批量导入结果（拦截器对 200 已解包为 data，对 400 验证错误返回完整响应体）
+export interface ImportResult {
+  imported?: number
+  code?: number
+  message?: string
+  data?: {
+    imported?: number
+    valid?: number
+    errors: { row: number; reason: string }[] | string[]
+  }
+}
+
 // Excel批量导入（400验证错误已在拦截器中特殊处理，透传给调用方）
-export const importEmployees = async (file: File): Promise<any> => {
+export const importEmployees = async (file: File): Promise<ImportResult> => {
   const formData = new FormData()
   formData.append('file', file)
   return request.post('/employees/import', formData)

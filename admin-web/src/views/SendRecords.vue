@@ -232,6 +232,7 @@ import { Search, Refresh, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecordList, getRecordStats, testSend, deleteRecord } from '@/api/records'
 import type { SendRecord, RecordQueryParams } from '@/api/records'
+import { getLevelText } from '@/utils/constants'
 
 // 统计数据
 const stats = reactive({
@@ -274,16 +275,6 @@ const formatDateTime = (value: string | Date | null) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-// 职级中文映射
-const getLevelText = (level?: string) => {
-  const map: Record<string, string> = {
-    management: '管理层',
-    manager: '三级经理',
-    employee: '普通员工'
-  }
-  return map[level || ''] || '普通员工'
-}
-
 // 职级标签颜色
 const getLevelTagType = (level?: string) => {
   const map: Record<string, string> = {
@@ -296,7 +287,7 @@ const getLevelTagType = (level?: string) => {
 
 // 获取状态类型
 const getStatusType = (status: string) => {
-  const typeMap: Record<string, any> = {
+  const typeMap: Record<string, string> = {
     success: 'success',
     failed: 'danger',
     pending: 'warning',
@@ -322,7 +313,7 @@ const getStatusText = (status: string) => {
 
 // 投递状态标签颜色
 const getDeliveryType = (status: string) => {
-  const map: Record<string, any> = {
+  const map: Record<string, string> = {
     Delivered: 'success',
     delivered: 'success',
     Failed: 'danger',
@@ -495,7 +486,7 @@ const handlePreviewVideo = (row: SendRecord) => {
     ElMessage.warning('该记录无视频')
     return
   }
-  // 将绝对 URL 转为相对路径（后端存的是 http://localhost:3000/video/xxx.mp4）
+  // 将绝对 URL 转为相对路径（后端存的是 http://localhost:3001/video/xxx.mp4）
   // 相对路径通过 Vite 代理访问，开发/生产通用
   try {
     const url = new URL(row.video_url)

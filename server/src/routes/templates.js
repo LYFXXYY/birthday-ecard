@@ -141,7 +141,8 @@ publicRouter.get('/:id/preview', async (req, res) => {
     }
     return res.type('text/html').send(html);
   } catch (err) {
-    res.status(500).send('预览失败: ' + err.message);
+    logger.error('[模板预览] 异常:', err.message);
+    res.status(500).send('预览失败');
   }
 });
 
@@ -161,7 +162,7 @@ const TEMPLATE_FIELDS = [
 const sanitizeInput = (obj) => {
   const sanitized = {};
   for (const key of TEMPLATE_FIELDS) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       sanitized[key] = obj[key];
     }
   }
@@ -183,7 +184,8 @@ router.get('/', async (req, res) => {
     });
     success(res, templates);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[模板列表] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -232,7 +234,7 @@ router.get('/folder-assets', async (req, res) => {
     success(res, assets);
   } catch (err) {
     logger.error(`[folder-assets] Error: ${err.message}`);
-    error(res, err.message, 500);
+    error(res, '操作失败，请稍后重试', 500);
   }
 });
 
@@ -258,7 +260,8 @@ router.post('/backfill-blessings', async (req, res) => {
 
     success(res, { updated }, `已为 ${updated} 个模板补配祝福语`);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[回填祝福语] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -270,10 +273,11 @@ router.post('/', async (req, res) => {
     const result = await Template.findByPk(template.id, {
       include: [{ model: Blessing, as: 'default_blessing', attributes: ['id', 'content'] }]
     });
-    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Template', model_id: template.id, details: { name: template.name } });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Template', model_id: template.id, details: { name: template.name } }).catch(console.error);
     success(res, result, '添加成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[新增模板] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -292,7 +296,8 @@ router.get('/:id', async (req, res) => {
 
     success(res, template);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[模板详情] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -308,10 +313,11 @@ router.put('/:id', async (req, res) => {
       return error(res, '模板不存在', 404);
     }
 
-    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Template', model_id: parseInt(req.params.id), details: sanitizeInput(req.body) });
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Template', model_id: parseInt(req.params.id), details: sanitizeInput(req.body) }).catch(console.error);
     success(res, null, '修改成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[修改模板] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -337,10 +343,11 @@ router.delete('/:id', async (req, res) => {
       return error(res, '模板不存在', 404);
     }
 
-    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Template', model_id: parseInt(req.params.id), details: { name: template?.name } });
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Template', model_id: parseInt(req.params.id), details: { name: template?.name } }).catch(console.error);
     success(res, null, refCount > 0 ? `删除成功，已解除 ${refCount} 位员工的关联` : '删除成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[删除模板] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 

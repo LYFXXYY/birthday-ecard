@@ -11,27 +11,27 @@ export default defineConfig({
     }
   },
   server: {
-    host: '127.0.0.1',
-    port: 5173, // 前端开发服务器端口（避开 Hyper-V 保留段 5041-5242）
+    host: true, // 监听所有网卡，显示 localhost + Network 等多个 URL
+    port: 5173, // 前端开发服务器端口
     open: true, // 自动打开浏览器
     cors: true, // 允许跨域
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // 后端服务器地址
+        target: 'http://localhost:3001', // 后端服务器地址
         changeOrigin: true, // 允许跨域
         secure: false // 如果是 https 接口，需要配置这个参数
         // 注意：不要 rewrite，后端路由本身就带 /api 前缀
       },
       '/uploads': {
-        target: 'http://localhost:3000', // 后端服务器（静态文件）
+        target: 'http://localhost:3001', // 后端服务器（静态文件）
         changeOrigin: true
       },
       '/video': {
-        target: 'http://localhost:3000', // 视频文件
+        target: 'http://localhost:3001', // 视频文件
         changeOrigin: true
       },
       '/card': {
-        target: 'http://localhost:3000', // 贺卡文件
+        target: 'http://localhost:3001', // 贺卡文件
         changeOrigin: true
       }
     }
@@ -40,14 +40,15 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild',
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
         // 分包策略
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
           elementPlus: ['element-plus'],
-          axios: ['axios']
+          axios: ['axios'],
+          echarts: ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers']
         },
         chunkFileNames: 'static/js/[name]-[hash].js',
         entryFileNames: 'static/js/[name]-[hash].js',

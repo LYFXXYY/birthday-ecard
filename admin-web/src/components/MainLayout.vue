@@ -136,7 +136,7 @@
     <footer class="footer">
       <span>© 信阳移动公司工会</span>
       <span class="footer-divider">|</span>
-      <span>豫ICP备xxxx号</span>
+      <span>{{ icpNumber }}</span>
     </footer>
   </div>
 </template>
@@ -168,6 +168,9 @@ const userStore = useUserStore()
 
 // Logo 地址（动态绑定避免 Vite 静态分析）
 const logoUrl = '/uploads/logo.svg'
+
+// ICP 备案号（通过环境变量配置，避免硬编码）
+const icpNumber = import.meta.env.VITE_ICP_NUMBER || '豫ICP备XXXXXXXX号'
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
@@ -222,24 +225,23 @@ const resetPasswordForm = () => {
   passwordFormRef.value?.clearValidate()
 }
 
-const submitChangePassword = () => {
-  passwordFormRef.value?.validate(async (valid: boolean) => {
-    if (!valid) return
+const submitChangePassword = async () => {
+  const valid = await passwordFormRef.value?.validate().catch(() => false)
+  if (!valid) return
 
-    try {
-      await changePassword({
-        oldPassword: passwordForm.value.oldPassword,
-        newPassword: passwordForm.value.newPassword
-      })
-      ElMessage.success('密码修改成功，请重新登录')
-      passwordDialogVisible.value = false
-      resetPasswordForm()
-      userStore.clearAuth()
-      router.push('/login')
-    } catch (err: any) {
-      ElMessage.error(err?.message || '密码修改失败，请重试')
-    }
-  })
+  try {
+    await changePassword({
+      oldPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword
+    })
+    ElMessage.success('密码修改成功，请重新登录')
+    passwordDialogVisible.value = false
+    resetPasswordForm()
+    userStore.clearAuth()
+    router.push('/login')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '密码修改失败，请重试')
+  }
 }
 
 // 处理下拉菜单命令

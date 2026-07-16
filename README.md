@@ -44,6 +44,7 @@ cd server
 cp .env.example .env
 # 编辑 .env，填写 DB_PASSWORD 和 JWT_SECRET
 npm install
+# 注意：playwright 依赖约 200MB（含 Chromium），如不需要视频录制功能可跳过安装
 npm run dev
 ```
 
@@ -67,7 +68,7 @@ npm run dev
 
 | 文档 | 说明 |
 |------|------|
-| [AGENTS.md](AGENTS.md) | AI 助手工作指南（面向 AI 编码助手） |
+| [agents.md](agents.md) | AI 助手工作指南（面向 AI 编码助手） |
 | [项目指南.md](项目指南.md) | 新手教程：环境准备、详细启动步骤、功能使用教程 |
 | [生日贺卡项目开发文档.md](生日贺卡项目开发文档.md) | 技术设计文档：架构、数据库、API、前端指南、生产部署 |
 | [代码审查与优化总结报告.md](代码审查与优化总结报告.md) | 版本迭代记录：120 个问题（v1.0 ~ v6.0） |
@@ -79,7 +80,7 @@ birthday-card-system/
 ├── server/              # 后端 Express API 服务
 ├── admin-web/           # 前端 Vue 3 管理后台
 ├── uploads/             # 模板处理与备份目录（含 processTemplates.js 标准化脚本）
-├── AGENTS.md            # AI 助手指南
+├── agents.md            # AI 助手指南
 ├── 项目指南.md           # 新手教程
 ├── 生日贺卡项目开发文档.md  # 技术设计 + 部署文档
 ├── 代码审查与优化总结报告.md  # 版本迭代记录
@@ -88,4 +89,4 @@ birthday-card-system/
 
 ## 版本
 
-项目1.3
+项目1.3完善1

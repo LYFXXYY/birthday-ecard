@@ -1,5 +1,10 @@
 // config/index.js 由 app.js 统一加载 dotenv，此文件不再重复调用
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getLogger } from '../utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const logger = getLogger('config');
 
@@ -7,10 +12,11 @@ const jwtSecret = process.env.JWT_SECRET || 'default_secret_change_in_production
 const nodeEnv = process.env.NODE_ENV || 'development';
 const smsProvider = process.env.SMS_PROVIDER || 'mock';
 
-// 生产环境安全警告
+// 生产环境安全警告：使用默认 JWT_SECRET 时直接退出，防止不安全启动
 if (nodeEnv === 'production' && jwtSecret === 'default_secret_change_in_production') {
   logger.error('[安全警告] JWT_SECRET 使用默认值！生产环境必须设置强密钥！');
   logger.error('[安全警告] 请在 .env 文件中设置 JWT_SECRET 为一个至少32字符的随机字符串');
+  process.exit(1);
 }
 
 if (smsProvider === 'carrier' && (!process.env.CSP_APP_ID || !process.env.CSP_PASSWORD)) {
@@ -18,16 +24,16 @@ if (smsProvider === 'carrier' && (!process.env.CSP_APP_ID || !process.env.CSP_PA
 }
 
 export const config = {
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 3001,
   nodeEnv,
-  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+  baseUrl: process.env.BASE_URL || 'http://localhost:3001',
   jwt: {
     secret: jwtSecret,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
-  cardsDir: process.env.CARDS_DIR || './generated-cards',
-  videosDir: process.env.VIDEOS_DIR || './generated-videos',
-  uploadsDir: process.env.UPLOADS_DIR || '../uploads',
+  cardsDir: path.resolve(__dirname, '..', process.env.CARDS_DIR || './generated-cards'),
+  videosDir: path.resolve(__dirname, '..', process.env.VIDEOS_DIR || './generated-videos'),
+  uploadsDir: path.resolve(__dirname, '..', process.env.UPLOADS_DIR || '../uploads'),
   // 贺卡发送者名称（用于模板 {{sender}} 占位符）
   senderName: process.env.SENDER_NAME || '信阳移动公司工会',
   // 公司名称（用于模板 {{company}} 占位符，默认与 senderName 相同）

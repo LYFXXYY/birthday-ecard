@@ -1,5 +1,12 @@
 // 数据库迁移工具 - 确保已存在的表拥有新增列
 // sequelize.sync() 不会为已存在的表添加新列，此工具弥补该缺陷
+//
+// TODO: 当前每次启动都遍历全部 MIGRATIONS 数组，通过 INFORMATION_SCHEMA 检查列是否已存在。
+// 虽然功能正确，但存在以下问题：
+//   1. 启动时对所有迁移做一次 INFORMATION_SCHEMA 查询，数量增长后效率下降
+//   2. 无法追踪迁移的执行顺序和依赖关系
+//   3. 没有回滚机制
+// 长期计划：引入版本号或 migration_meta 表，记录已应用的迁移，避免重复检查。
 import { sequelize } from '../config/database.js';
 import { QueryTypes } from 'sequelize';
 import { getLogger } from './logger.js';

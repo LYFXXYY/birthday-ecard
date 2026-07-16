@@ -43,6 +43,6 @@ export interface ExtendedStats {
   alerts: Alert[]
 }
 
-export const getSystemHealth = (): Promise<SystemHealth> => request.get<SystemHealth>('/monitor/status') as any
-export const getSystemStats = (): Promise<SystemStats> => request.get<SystemStats>('/monitor/stats') as any
-export const getExtendedStats = (): Promise<ExtendedStats> => request.get<ExtendedStats>('/monitor/extended') as any
+export const getSystemHealth = (): Promise<SystemHealth> => request.get('/monitor/status')
+export const getSystemStats = (): Promise<SystemStats> => request.get('/monitor/stats')
+export const getExtendedStats = (): Promise<ExtendedStats> => request.get('/monitor/extended')

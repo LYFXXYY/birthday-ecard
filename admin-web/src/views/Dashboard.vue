@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div v-loading="loading" class="dashboard-container">
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <div class="stat-card" style="--card-accent: var(--primary-color)">
@@ -160,12 +160,20 @@
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { User, Star, Calendar, Message, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer])
 import { getTodayBirthdayEmployees, getTomorrowBirthdayEmployees, getEmployeeList } from '@/api/employees'
 import { getRecordStats, getMonthlyStats, getRecordList, testSend } from '@/api/records'
 import { getSystemHealth, getSystemStats, getExtendedStats } from '@/api/monitor'
 import type { Employee } from '@/api/employees'
 import type { SystemHealth, SystemStats, ExtendedStats } from '@/api/monitor'
+import type { SendRecord } from '@/api/records'
+
+// 加载状态
+const loading = ref(true)
 
 // 统计数据
 const stats = reactive({
@@ -364,10 +372,13 @@ const loadData = async () => {
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`
-      const todayRecords = await getRecordList({ page: 1, pageSize: 1000, status: 'success', startDate: todayStr, endDate: tomorrowStr })
-      todayRecords.list.forEach((r: any) => {
+      // TODO: 当今日成功发送记录超过 pageSize 时需改为分页循环获取，避免遗漏
+      const todayRecords = await getRecordList({ page: 1, pageSize: 10000, status: 'success', startDate: todayStr, endDate: tomorrowStr })
+      todayRecords.list.forEach((r: SendRecord) => {
         if (r.employee_id) sentEmployeeIds.value.add(r.employee_id)
       })
+      // 重新赋值触发 Vue 响应更新
+      sentEmployeeIds.value = new Set(sentEmployeeIds.value)
     } catch (e) {
       console.error('[仪表盘] 查询今日发送记录失败:', e)
     }
@@ -382,6 +393,8 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('加载数据失败：', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -444,6 +457,7 @@ const handleTestSend = async (employeeId: number) => {
     const isSuccess = res?.smsStatus === 'success'
     if (isSuccess) {
       sentEmployeeIds.value.add(employeeId)
+      sentEmployeeIds.value = new Set(sentEmployeeIds.value)
     }
   } catch (error) {
     clearInterval(progressTimer)

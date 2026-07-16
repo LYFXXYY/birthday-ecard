@@ -56,7 +56,7 @@ export const previewTemplate = (id: number): Promise<string> => {
 }
 
 // 回填：为未匹配祝福语的模板自动分配通用祝福语
-export const backfillBlessings = (): Promise<{ updated: number }> => {
+export const backfillBlessings = (): Promise<{ updated: number; message?: string }> => {
   return request.post('/templates/backfill-blessings')
 }
 

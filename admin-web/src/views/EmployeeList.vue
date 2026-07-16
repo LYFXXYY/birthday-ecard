@@ -125,7 +125,7 @@
             </el-table-column>
             <el-table-column label="职级" width="100">
               <template #default="{ row }">
-                {{ levelLabel(row.level) }}
+                {{ getLevelText(row.level) }}
               </template>
             </el-table-column>
             <el-table-column prop="position" label="职位" min-width="160" />
@@ -202,6 +202,7 @@ import {
   deleteDepartment,
   type Department
 } from '@/api/departments'
+import { getLevelText } from '@/utils/constants'
 
 const router = useRouter()
 
@@ -225,11 +226,6 @@ const buildDeptMap = (depts: Department[]) => {
 const getDeptName = (id: number | null | undefined): string => {
   if (!id) return ''
   return deptMap.get(id) || ''
-}
-
-const levelLabel = (level?: string): string => {
-  const map: Record<string, string> = { management: '管理层', manager: '三级经理', employee: '普通员工' }
-  return level ? (map[level] || '-') : '-'
 }
 
 const loadDeptTree = async () => {

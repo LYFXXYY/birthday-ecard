@@ -91,13 +91,12 @@ router.get('/', (req, res) => {
       message: 'OK',
       data: {
         csp: cspItems,
-        sms: smsItems,
-        envPath: ENV_PATH
+        sms: smsItems
       }
     });
   } catch (err) {
     logger.error('[短信配置] 读取失败:', err.message);
-    res.status(500).json({ code: 500, message: '读取配置失败: ' + err.message });
+    res.status(500).json({ code: 500, message: '操作失败，请稍后重试' });
   }
 });
 
@@ -173,7 +172,7 @@ router.put('/', (req, res) => {
     });
   } catch (err) {
     logger.error('[短信配置] 更新失败:', err.message);
-    res.status(500).json({ code: 500, message: '更新配置失败: ' + err.message });
+    res.status(500).json({ code: 500, message: '操作失败，请稍后重试' });
   }
 });
 

@@ -1,5 +1,5 @@
 import xlsx from 'xlsx';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import iconv from 'iconv-lite';
 import { getLogger } from './logger.js';
@@ -75,7 +75,7 @@ const formatDateLocal = (date) => {
  * @param {string} filePath - 文件在磁盘上的实际路径
  * @param {string} [originalName] - 原始文件名（用于检测文件类型，因 multer 临时文件无扩展名）
  */
-export const parseEmployeeExcel = (filePath, originalName) => {
+export const parseEmployeeExcel = async (filePath, originalName) => {
   // 优先使用原始文件名判断类型（multer临时文件没有扩展名）
   const nameToCheck = originalName || filePath;
   const ext = path.extname(nameToCheck).toLowerCase();
@@ -83,7 +83,7 @@ export const parseEmployeeExcel = (filePath, originalName) => {
 
   if (ext === '.csv') {
     // CSV 文件：先检测编码，GBK 文件需要用 iconv-lite 解码
-    const buffer = fs.readFileSync(filePath);
+    const buffer = await fs.readFile(filePath);
     const isUtf8 = isValidUtf8(buffer);
     let content = isUtf8
       ? buffer.toString('utf-8')
@@ -95,8 +95,9 @@ export const parseEmployeeExcel = (filePath, originalName) => {
     logger.info(`[导入] CSV编码检测: ${isUtf8 ? 'UTF-8' : 'GBK/GB2312'}, 去BOM: ${content.charCodeAt(0) !== 0xFEFF}`);
     workbook = xlsx.read(content, { type: 'string' });
   } else {
-    // Excel 文件：xlsx/xls 内置编码处理
-    workbook = xlsx.readFile(filePath);
+    // Excel 文件：xlsx/xls 内置编码处理，使用异步读取避免阻塞事件循环
+    const buffer = await fs.readFile(filePath);
+    workbook = xlsx.read(buffer, { type: 'buffer' });
   }
 
   const sheetName = workbook.SheetNames[0];

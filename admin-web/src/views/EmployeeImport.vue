@@ -50,7 +50,6 @@
             accept=".xlsx,.xls,.csv"
             :on-change="handleFileChange"
             :on-exceed="handleExceed"
-            :before-upload="beforeUpload"
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">
@@ -123,14 +122,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { Back, Download, UploadFilled, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { importEmployees } from '@/api/employees'
 import * as XLSX from 'xlsx'
-
-const router = useRouter()
 
 // 选中的文件
 const selectedFile = ref<File | null>(null)
@@ -181,29 +177,30 @@ const downloadTemplate = () => {
   ElMessage.success('模板下载成功')
 }
 
-// 文件改变
+// 文件改变（含校验，因 auto-upload=false 不会触发 beforeUpload）
 const handleFileChange = (file: UploadFile) => {
-  selectedFile.value = file.raw || null
+  const raw = file.raw
+  if (!raw) return
+
+  // 格式校验
+  const isXlsx = raw.name.endsWith('.xlsx') || raw.name.endsWith('.xls') || raw.name.endsWith('.csv')
+  if (!isXlsx) {
+    ElMessage.error('仅支持 .xlsx、.xls 或 .csv 格式')
+    return
+  }
+  // 大小校验
+  const isLt10M = raw.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过 10MB')
+    return
+  }
+
+  selectedFile.value = raw
 }
 
 // 文件超出限制
 const handleExceed = () => {
   ElMessage.warning('只能上传一个文件')
-}
-
-// 上传前校验
-const beforeUpload = (file: File) => {
-  const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')
-  if (!isXlsx) {
-    ElMessage.error('仅支持 .xlsx、.xls 或 .csv 格式')
-    return false
-  }
-  const isLt10M = file.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB')
-    return false
-  }
-  return true
 }
 
 // 清除文件

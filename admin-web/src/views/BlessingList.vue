@@ -58,20 +58,11 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getBlessingList, deleteBlessing } from '@/api/blessings'
 import type { Blessing } from '@/api/blessings'
+import { getLevelText } from '@/utils/constants'
 
 const router = useRouter()
 const blessings = ref<Blessing[]>([])
 const loading = ref(false)
-
-const getLevelText = (level?: string | null) => {
-  const map: Record<string, string> = {
-    management: '管理层',
-    manager: '三级经理',
-    employee: '普通员工',
-    all: '通用'
-  }
-  return map[level || 'all'] || '通用'
-}
 
 const loadBlessings = async () => {
   loading.value = true
@@ -95,7 +86,7 @@ const handleEdit = (row: Blessing) => {
 
 const handleDelete = async (row: Blessing) => {
   try {
-    const refCount = (row as any).template_count || 0
+    const refCount = row.template_count || 0
     const confirmMsg = refCount > 0
       ? `确定要删除此祝福语吗？\n\n⚠️ 警告：该祝福语正在被 ${refCount} 个模板引用，删除后这些模板的默认祝福语将被清空。`
       : '确定要删除此祝福语吗？'

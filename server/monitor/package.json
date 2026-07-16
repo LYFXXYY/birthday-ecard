@@ -9,8 +9,8 @@
     "dev": "node --watch src/app.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.4.2",
     "mysql2": "^3.12.0",
-    "node-cron": "^3.0.3"
+    "node-cron": "^4.2.1"
   }
 }

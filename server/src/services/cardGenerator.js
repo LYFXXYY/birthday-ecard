@@ -5,7 +5,7 @@ import fsSync from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import { spawnSync } from 'child_process';
+import { spawn } from 'child_process';
 import { config } from '../config/index.js';
 import { getLogger } from '../utils/logger.js';
 
@@ -129,7 +129,7 @@ export const generateCard = async (template, employee) => {
       throw new Error(`模板 ${template.name} 既无 folder_path 也无 html_content`);
     }
 
-    // 1. 复制模板文件夹到 cardsDir（使用 resolve 确保绝对路径，避免 spawnSync cwd 双重解析）
+    // 1. 复制模板文件夹到 cardsDir（使用 resolve 确保绝对路径，避免 spawn cwd 双重解析）
     const cardDir = path.resolve(config.cardsDir, cardId);
     await copyDir(templateSourceDir, cardDir);
 
@@ -165,10 +165,27 @@ export const generateCard = async (template, employee) => {
 
     if (fsSync.existsSync(recordScript)) {
       logger.info(`[贺卡生成] 调用 record.js 录制视频...`);
-      const result = spawnSync(process.execPath, [recordScript, videoPath], {
-        cwd: cardDir,
-        stdio: ['inherit', 'inherit', 'pipe'], // 捕获 stderr 用于错误诊断
-        timeout: 300000 // 5 分钟超时
+      const result = await new Promise((resolve) => {
+        const child = spawn(process.execPath, [recordScript, videoPath], {
+          cwd: cardDir,
+          stdio: ['inherit', 'inherit', 'pipe'], // 捕获 stderr 用于错误诊断
+          timeout: 300000 // 5 分钟超时
+        });
+
+        let stderr = Buffer.alloc(0);
+        if (child.stderr) {
+          child.stderr.on('data', (chunk) => {
+            stderr = Buffer.concat([stderr, chunk]);
+          });
+        }
+
+        child.on('error', (err) => {
+          resolve({ error: err, signal: null, status: null, stderr });
+        });
+
+        child.on('close', (code, signal) => {
+          resolve({ error: null, signal, status: code, stderr });
+        });
       });
 
       // 诊断失败原因（优先级：spawn 错误 > 超时 > 信号 > 非零退出码）

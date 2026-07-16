@@ -155,7 +155,7 @@ const handleReset = () => {
 const loadLogs = async () => {
   loading.value = true
   try {
-    const params: Record<string, any> = {
+    const params: Record<string, string | number> = {
       page: currentPage.value,
       pageSize: pageSize.value
     }

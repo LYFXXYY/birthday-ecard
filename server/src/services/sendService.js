@@ -38,7 +38,7 @@ const delay = ms => new Promise(r => setTimeout(r, ms));
  * 带指数退避的短信发送包装器
  */
 const sendSMSWithRetry = async (phone, smsBody, employeeName) => {
-  const maxRetries = 3;
+  const maxRetries = config.sms?.maxRetries || 3;
   let smsResult;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {

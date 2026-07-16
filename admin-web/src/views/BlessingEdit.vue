@@ -96,25 +96,25 @@ const loadBlessingDetail = async () => {
 
 const handleSubmit = async () => {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid: boolean) => {
-    if (!valid) return
-    submitting.value = true
-    try {
-      if (isEdit.value) {
-        await updateBlessing(Number(route.params.id), formData as Blessing)
-        ElMessage.success('修改成功')
-      } else {
-        await createBlessing(formData as Blessing)
-        ElMessage.success('添加成功')
-      }
-      router.push('/blessings')
-    } catch (error) {
-      console.error('提交失败：', error)
-      ElMessage.error(isEdit.value ? '修改失败' : '添加失败')
-    } finally {
-      submitting.value = false
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+
+  submitting.value = true
+  try {
+    if (isEdit.value) {
+      await updateBlessing(Number(route.params.id), formData as Blessing)
+      ElMessage.success('修改成功')
+    } else {
+      await createBlessing(formData as Blessing)
+      ElMessage.success('添加成功')
     }
-  })
+    router.push('/blessings')
+  } catch (error) {
+    console.error('提交失败：', error)
+    ElMessage.error(isEdit.value ? '修改失败' : '添加失败')
+  } finally {
+    submitting.value = false
+  }
 }
 
 const handleBack = () => {

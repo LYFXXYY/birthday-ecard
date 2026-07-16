@@ -7,6 +7,7 @@
  *   - 随机选取：从符合条件的记录中随机取 1 条
  */
 import { Op } from 'sequelize';
+import { sequelize } from '../config/database.js';
 import { Blessing, Template } from '../models/index.js';
 import { getLogger } from '../utils/logger.js';
 
@@ -35,9 +36,8 @@ export const pickRandomUniversalBlessing = async (employeeLevel = null) => {
     ];
   }
 
-  const blessings = await Blessing.findAll({ where });
-  if (blessings.length === 0) return null;
-  return blessings[Math.floor(Math.random() * blessings.length)];
+  const blessing = await Blessing.findOne({ where, order: sequelize.random() });
+  return blessing;
 };
 
 /**
@@ -55,16 +55,17 @@ export const pickRandomUniversalTemplate = async (employeeLevel = null) => {
       { employee_level: null }
     ];
   }
-  const templates = await Template.findAll({
+  const template = await Template.findOne({
     where,
-    attributes: ['id', 'name', 'employee_level']
+    attributes: ['id', 'name', 'employee_level'],
+    order: sequelize.random()
   });
-  if (templates.length === 0) {
+  if (!template) {
     // 降级：不带等级条件再找一次
     if (employeeLevel) return pickRandomUniversalTemplate(null);
     return null;
   }
-  return templates[Math.floor(Math.random() * templates.length)];
+  return template;
 };
 
 /**

@@ -5,7 +5,7 @@ export interface SystemLog {
   level: 'info' | 'warn' | 'error'
   category: string
   message: string
-  metadata: any
+  metadata: Record<string, unknown> | null
   created_at: string
 }
 
@@ -33,10 +33,10 @@ export const getSystemLogs = (params?: SystemLogQuery): Promise<{
   page: number
   pageSize: number
 }> => {
-  return request.get('/system-logs', { params }) as any
+  return request.get('/system-logs', { params })
 }
 
 // 获取系统日志统计
 export const getSystemLogStats = (): Promise<SystemLogStats> => {
-  return request.get('/system-logs/stats') as any
+  return request.get('/system-logs/stats')
 }

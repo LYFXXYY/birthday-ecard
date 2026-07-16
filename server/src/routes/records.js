@@ -7,6 +7,7 @@ import { sendBirthdayCard } from '../services/sendService.js';
 import { config } from '../config/index.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { cleanupCardFiles } from '../utils/cardFileCleanup.js';
 
 const router = express.Router();
 
@@ -77,7 +78,8 @@ router.get('/', async (req, res) => {
       pageSize: sizeNum
     });
   } catch (err) {
-    error(res, err.message);
+    console.error('[发送记录列表] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -95,7 +97,8 @@ router.get('/stats', async (req, res) => {
       success_rate: total ? parseFloat(((successCount / total) * 100).toFixed(2)) : 0
     });
   } catch (err) {
-    error(res, err.message);
+    console.error('[发送统计] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -128,7 +131,8 @@ router.get('/monthly-stats', async (req, res) => {
 
     success(res, { monthly });
   } catch (err) {
-    error(res, err.message);
+    console.error('[月度统计] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -156,7 +160,8 @@ router.post('/test-send/:employeeId', async (req, res) => {
       smsError: result.error
     }, result.success ? '测试发送成功' : '贺卡生成成功，短信发送失败');
   } catch (err) {
-    error(res, err.message);
+    console.error('[测试发送] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -171,23 +176,14 @@ router.delete('/:id', async (req, res) => {
 
     // 清理磁盘上的贺卡文件夹和视频文件
     if (record.card_id) {
-      // 清理贺卡文件夹
-      const cardDir = path.join(config.cardsDir, record.card_id);
-      await fs.rm(cardDir, { recursive: true, force: true }).catch(() => {});
-      // 清理视频文件（mp4 + 兼容旧版 webm）
-      const videoPath = path.join(config.videosDir, `${record.card_id}.mp4`);
-      await fs.unlink(videoPath).catch(() => {});
-      const legacyVideoPath = path.join(config.videosDir, `${record.card_id}.webm`);
-      await fs.unlink(legacyVideoPath).catch(() => {});
-      // 兼容旧版单文件 HTML
-      const legacyPath = path.join(config.cardsDir, `${record.card_id}.html`);
-      await fs.unlink(legacyPath).catch(() => {});
+      await cleanupCardFiles(record.card_id);
     }
 
     await record.destroy();
     success(res, null, '删除成功');
   } catch (err) {
-    error(res, err.message);
+    console.error('[删除记录] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 

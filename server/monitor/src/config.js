@@ -30,7 +30,7 @@ export const loadConfig = () => {
   return {
     main: {
       host: get('MAIN_HOST', 'http://localhost'),
-      port: getInt('MAIN_PORT', 3000),
+      port: getInt('MAIN_PORT', 3001),
       healthEndpoint: get('HEALTH_ENDPOINT', '/api/health'),
       get baseUrl() {
         return `${this.host}:${this.port}`;

@@ -17,7 +17,7 @@ export interface Department {
 
 // 获取部门树形结构
 export const getDepartmentTree = (isActive?: boolean): Promise<Department[]> => {
-  const params: any = {}
+  const params: Record<string, string> = {}
   if (isActive !== undefined) {
     params.is_active = isActive ? '1' : '0'
   }

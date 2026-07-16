@@ -93,10 +93,11 @@ const routes: RouteRecordRaw[] = [
       }
     ]
   },
-  // 404重定向
+  // 404 页面
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'NotFound',
+    component: () => import('@/views/NotFound.vue')
   }
 ]
 
@@ -105,21 +106,48 @@ const router = createRouter({
   routes
 })
 
+// 解析 JWT 判断是否已过期
+function isTokenExpired(token: string): boolean {
+  try {
+    // JWT 使用 base64url 编码（- 和 _ 字符，无 padding），atob() 只认标准 base64
+    // 需要先将 base64url 转换为标准 base64 再解码
+    let base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    // 补齐 padding（base64 长度必须是 4 的倍数）
+    while (base64.length % 4) base64 += '='
+    const payload = JSON.parse(atob(base64))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 // 全局路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
   const token = userStore.getToken()
+  console.log('[路由守卫] to:', to.path, 'token:', token ? token.substring(0, 20) + '...' : 'null')
+
+  // 有 token 但已过期 → 清除并跳转登录
+  if (token && isTokenExpired(token)) {
+    console.log('[路由守卫] token已过期，清除并跳转登录')
+    userStore.clearAuth()
+    next('/login')
+    return
+  }
 
   // 需要登录的页面
   if (to.meta.requiresAuth && !token) {
+    console.log('[路由守卫] 需要认证但无token，跳转登录')
     next('/login')
   } 
   // 未登录状态才能访问的页面（如登录页）
   else if (to.meta.requiresGuest && token) {
+    console.log('[路由守卫] 已有token，从登录页跳转到首页')
     next('/')
   } 
   // 其他情况正常跳转
   else {
+    console.log('[路由守卫] 放行')
     next()
   }
 })

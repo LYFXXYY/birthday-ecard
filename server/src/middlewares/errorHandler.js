@@ -4,7 +4,7 @@ import { getLogger } from '../utils/logger.js';
 const logger = getLogger('app');
 
 export const errorHandler = (err, req, res, next) => {
-  logger.error(`[错误] ${err.message}`);
+  logger.error(`[错误] ${req.method} ${req.path} - ${err.message}\n${err.stack}`);
 
   const statusCode = err.statusCode || 500;
   const message = process.env.NODE_ENV === 'production' ? '服务器内部错误' : err.message;

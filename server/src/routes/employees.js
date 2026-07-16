@@ -13,6 +13,7 @@ import { sendBirthdayCard } from '../services/sendService.js';
 import { autoAssignTemplateToEmployee, pickRandomUniversalTemplate } from '../services/autoMatch.js';
 import { config } from '../config/index.js';
 import { getLogger } from '../utils/logger.js';
+import { cleanupCardFiles } from '../utils/cardFileCleanup.js';
 
 const logger = getLogger('employee');
 
@@ -28,6 +29,7 @@ router.use(authMiddleware);
 // 配置文件上传（使用绝对路径，避免 CWD 不一致问题）
 const upload = multer({
   dest: UPLOAD_DIR,
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (['.xlsx', '.xls', '.csv'].includes(ext)) {
@@ -57,19 +59,36 @@ const sanitizeEmployeeInput = (obj) => {
 };
 
 /**
- * 递归获取部门及其所有子部门的 ID 列表
+ * 获取部门及所有后代部门的 ID 列表
+ * 使用单次批量查询 + 内存 BFS 遍历，避免递归逐层查询数据库
  */
 const getDepartmentAndDescendantIds = async (deptId) => {
-  const ids = [deptId];
-  const children = await Department.findAll({
-    where: { parent_id: deptId },
-    attributes: ['id']
+  const allDepartments = await Department.findAll({
+    attributes: ['id', 'parent_id'],
+    order: [['level', 'ASC']]
   });
-  for (const child of children) {
-    const childIds = await getDepartmentAndDescendantIds(child.id);
-    ids.push(...childIds);
+
+  // 内存中 BFS 遍历子树
+  const result = [deptId];
+  const queue = [deptId];
+  const childrenMap = new Map();
+  for (const dept of allDepartments) {
+    if (dept.parent_id) {
+      if (!childrenMap.has(dept.parent_id)) {
+        childrenMap.set(dept.parent_id, []);
+      }
+      childrenMap.get(dept.parent_id).push(dept.id);
+    }
   }
-  return ids;
+  while (queue.length > 0) {
+    const current = queue.shift();
+    const children = childrenMap.get(current) || [];
+    for (const childId of children) {
+      result.push(childId);
+      queue.push(childId);
+    }
+  }
+  return result;
 };
 
 // GET /api/employees - 获取员工列表（分页、搜索）
@@ -133,7 +152,8 @@ router.get('/', async (req, res) => {
       pageSize: parseInt(pageSize)
     });
   } catch (err) {
-    error(res, err.message);
+    logger.error('[员工列表] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -161,7 +181,8 @@ router.get('/today-birthday', async (req, res) => {
 
     success(res, employees);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[今日生日员工] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -186,7 +207,8 @@ router.get('/tomorrow-birthday', async (req, res) => {
 
     success(res, employees);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[明日生日员工] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -206,7 +228,8 @@ router.get('/:id', async (req, res) => {
 
     success(res, employee);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[员工详情] 查询异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -217,10 +240,11 @@ router.post('/', async (req, res) => {
     // 若未手动指定模板，自动从通用模板中随机匹配
     await autoAssignTemplateToEmployee(employee);
     // 记录操作日志
-    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Employee', model_id: employee.id, details: { name: employee.name } });
+    logOperation({ ...extractLogInfo(req), action: 'create', model: 'Employee', model_id: employee.id, details: { name: employee.name } }).catch(console.error);
     success(res, employee, '添加成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[新增员工] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -246,7 +270,8 @@ router.post('/backfill-templates', async (req, res) => {
 
     success(res, { updated }, `已为 ${updated} 位员工补配模板`);
   } catch (err) {
-    error(res, err.message);
+    logger.error('[回填模板] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -262,10 +287,11 @@ router.put('/:id', async (req, res) => {
       return error(res, '员工不存在', 404);
     }
 
-    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Employee', model_id: parseInt(req.params.id), details: sanitizeEmployeeInput(req.body) });
+    logOperation({ ...extractLogInfo(req), action: 'update', model: 'Employee', model_id: parseInt(req.params.id), details: sanitizeEmployeeInput(req.body) }).catch(console.error);
     success(res, null, '修改成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[修改员工] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -281,15 +307,7 @@ router.delete('/:id', async (req, res) => {
     const records = await SendRecord.findAll({ where: { employee_id: req.params.id }, attributes: ['card_id'] });
     for (const record of records) {
       if (record.card_id) {
-        const cardDir = path.join(config.cardsDir, record.card_id);
-        await fs.rm(cardDir, { recursive: true, force: true }).catch(() => {});
-        const videoPath = path.join(config.videosDir, `${record.card_id}.mp4`);
-        await fs.unlink(videoPath).catch(() => {});
-        // 兼容旧版 .webm 文件
-        const legacyVideoPath = path.join(config.videosDir, `${record.card_id}.webm`);
-        await fs.unlink(legacyVideoPath).catch(() => {});
-        const legacyPath = path.join(config.cardsDir, `${record.card_id}.html`);
-        await fs.unlink(legacyPath).catch(() => {});
+        await cleanupCardFiles(record.card_id);
       }
     }
 
@@ -297,10 +315,11 @@ router.delete('/:id', async (req, res) => {
     await SendRecord.destroy({ where: { employee_id: req.params.id } });
 
     await Employee.destroy({ where: { id: req.params.id } });
-    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Employee', model_id: parseInt(req.params.id), details: { name: emp.name } });
+    logOperation({ ...extractLogInfo(req), action: 'delete', model: 'Employee', model_id: parseInt(req.params.id), details: { name: emp.name } }).catch(console.error);
     success(res, null, '删除成功');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[删除员工] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -328,7 +347,8 @@ router.post('/:id/generate-card', async (req, res) => {
       smsError: result.error
     }, result.success ? '贺卡生成并发送成功' : '贺卡生成成功，短信发送失败');
   } catch (err) {
-    error(res, err.message);
+    logger.error('[生成贺卡] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
@@ -340,7 +360,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
     }
 
     logger.info(`[导入] 文件: ${req.file.originalname}, 路径: ${req.file.path}, 大小: ${req.file.size} bytes`);
-    const employees = parseEmployeeExcel(req.file.path, req.file.originalname);
+    const employees = await parseEmployeeExcel(req.file.path, req.file.originalname);
     const errors = [];
 
     for (let i = 0; i < employees.length; i++) {
@@ -361,15 +381,20 @@ router.post('/import', upload.single('file'), async (req, res) => {
       });
     }
 
-    // 检查重复手机号（手动检查，因为 phone 字段无唯一索引）
-    const duplicates = [];
-    for (let i = 0; i < employees.length; i++) {
-      const emp = employees[i];
-      const existing = await Employee.findOne({ where: { phone: emp.phone } });
-      if (existing) {
-        duplicates.push({ row: i + 2, phone: emp.phone, name: emp.name });
-      }
-    }
+    // 检查重复手机号（批量查询，避免 N+1）
+    const { Op } = await import('sequelize');
+    const phones = employees.map(e => e.phone);
+    const existingEmployees = await Employee.findAll({
+      where: { phone: { [Op.in]: phones } },
+      attributes: ['id', 'phone', 'name']
+    });
+    const existingPhoneSet = new Set(existingEmployees.map(e => e.phone));
+    const duplicates = employees
+      .filter(emp => existingPhoneSet.has(emp.phone))
+      .map((emp, i) => {
+        const existing = existingEmployees.find(e => e.phone === emp.phone);
+        return { row: employees.indexOf(emp) + 2, phone: emp.phone, name: emp.name, existingName: existing?.name };
+      });
 
     if (duplicates.length > 0) {
       await fs.unlink(req.file.path);
@@ -414,7 +439,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
         await fs.unlink(req.file.path);
       } catch {}
     }
-    error(res, `导入失败: ${err.message}`);
+    logger.error('[导入员工] 异常:', err.message);
+    error(res, '操作失败，请稍后重试');
   }
 });
 
