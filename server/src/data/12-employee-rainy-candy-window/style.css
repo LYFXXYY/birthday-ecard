@@ -418,13 +418,14 @@ h2 {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 18px;
+  font-size: clamp(20px, 6vw, 28px);
   font-weight: 600;
   letter-spacing: 1px;
   opacity: 0.8;
   z-index: 10;
   pointer-events: none;
-}
+
+  white-space: nowrap;}
 
 /* ===== 手机端文案框居中 + logo 放大 ===== */
 .copy-panel, .copy-block, .copy-stack, .copy-cover,

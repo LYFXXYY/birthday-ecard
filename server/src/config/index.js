@@ -31,8 +31,8 @@ export const config = {
     secret: jwtSecret,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
-  cardsDir: path.resolve(__dirname, '..', process.env.CARDS_DIR || './generated-cards'),
-  videosDir: path.resolve(__dirname, '..', process.env.VIDEOS_DIR || './generated-videos'),
+  cardsDir: path.resolve(__dirname, '..', '..', process.env.CARDS_DIR || './generated-cards'),
+  videosDir: path.resolve(__dirname, '..', '..', process.env.VIDEOS_DIR || './generated-videos'),
   uploadsDir: path.resolve(__dirname, '..', process.env.UPLOADS_DIR || '../uploads'),
   // 贺卡发送者名称（用于模板 {{sender}} 占位符）
   senderName: process.env.SENDER_NAME || '信阳移动公司工会',
