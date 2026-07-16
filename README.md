@@ -18,7 +18,7 @@
 
 | 层次 | 技术 | 说明 |
 |------|------|------|
-| 后端 | Node.js + Express 5.x | ES Modules，端口 3000 |
+| 后端 | Node.js + Express 5.x | ES Modules，端口 3001 |
 | 前端 | Vue 3 + TypeScript + Element Plus + Vite | 管理后台，端口 5173 |
 | 数据库 | MySQL 8.0+ + Sequelize ORM | 自动建表 |
 | 认证 | JWT (jsonwebtoken + bcryptjs) | Token 认证，24h 过期 |
@@ -89,4 +89,4 @@ birthday-card-system/
 
 ## 版本
 
-项目1.3完善1
+项目1.3完善2

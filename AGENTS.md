@@ -1,7 +1,7 @@
 # AGENTS.md — AI 智能体交接指南
 
 > 本文件是新会话的首要参考。新智能体应通读全文后开始工作。
-> 最后更新：2026-07-15 | 项目版本：v7.1.0
+> 最后更新：2026-07-16 | 项目版本：v7.2.0
 
 ## 1. 项目概况
 
@@ -16,6 +16,7 @@
 - **阶段一~八**：全部完成并验证（数据库、部门管理、等级匹配、操作日志、安全增强、双服务监控、企业主题、视频录制）
 - **v7.0.0 功能优化**：Dashboard 重构 + 监控整合、CSP V2.4.3 接口对接、职级名称统一、祝福语匹配升级、投递状态追踪
 - **v7.1.0 独立监控**：`server/monitor/` 独立进程，detached spawn，后端崩溃时继续检测
+- **v7.2.0 登录修复与安全加固**：修复 JWT base64url 解码导致 token 误判过期（中文 display_name 触发）、CORS 改为白名单模式（localhost + 指定内网 IP）、会话超时实时校验（auth 中间件检查 expires_at 和 last_activity）、恢复登录速率限制（10 次/分钟）
 - **阶段九（部署）**：待开发 — PM2 配置、Nginx 示例、备份脚本、部署文档
 - **阶段十（测试）**：待开发 — 单元测试、集成测试、安全测试、性能测试
 
@@ -175,6 +176,7 @@ birthday-card-system/
 - Swiper v11+ 导入路径是 `swiper/vue`（不是 `swiper`），模块从 `swiper/modules` 导入
 - Element Plus 水平菜单的 el-sub-menu 弹出层 teleported 到 body，scoped 的 :deep() 无法覆盖，需用 popper-class + :global()
 - 响应拦截器解包 response.data，API 函数需要显式类型声明避免 TS 推断错误
+- **JWT base64url 解码**：`router/index.ts` 的 `isTokenExpired()` 必须先将 base64url 转标准 base64（`-`→`+`、`_`→`/`、补齐 padding）再 `atob()`，否则含中文 display_name 的 token 解码失败被误判过期
 
 ### 6.5 开发环境
 - 修改后端代码后必须 taskkill 杀旧 Node 进程再重启（无 nodemon）
@@ -219,7 +221,9 @@ birthday-card-system/
 - 贺卡 cardId：UUID v4 + `path.basename()` 防路径遍历
 - 生产环境 `JWT_SECRET` 必须随机长字符串
 - 密码：6位+字母数字，90天到期提醒，首次登录强制修改
-- 会话：active_sessions 追踪，30分钟超时注销，最多3设备并发
+- 会话：active_sessions 追踪，auth 中间件实时校验 `expires_at` 和 `last_activity`（30分钟空闲超时），最多3设备并发
+- CORS 白名单：`app.js` 中 `ALLOWED_HOSTS` 控制允许的 origin（localhost + 指定内网 IP），支持 `ALLOWED_ORIGINS` 环境变量扩展
+- 登录速率限制：10 次/分钟/IP（`auth.js` 的 `loginLimiter`）
 - 双重密码验证：敏感操作前二次确认
 - 删除全为硬删除，员工删除级联删除发送记录
 - 发送管道用 sequelize.transaction() 事务保护
