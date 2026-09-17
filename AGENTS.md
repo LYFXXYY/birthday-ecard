@@ -95,7 +95,7 @@ birthday-card-system/
 │   │   ├── middlewares/        # authMiddleware + operationLog + errorHandler
 │   │   ├── services/           # scheduler/sendService/cardGenerator/templateMatcher/smsService/heartbeat/monitor/session
 │   │   ├── utils/              # JWT/密码校验/Excel解析/DB迁移/模板种子
-│   │   └── data/               # 13个模板文件夹 + logo.svg + music/
+│   │   └── data/               # 12个模板文件夹（编号1-13，无3号）+ logo.svg + music/
 │   ├── heartbeats/             # 心跳文件（sender.json、monitor.json）
 │   ├── monitor/                # 独立监控项目（4检测模块 + 日志清理）
 │   ├── generated-cards/        # 运行时贺卡目录

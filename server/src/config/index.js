@@ -24,9 +24,9 @@ if (smsProvider === 'carrier' && (!process.env.CSP_APP_ID || !process.env.CSP_PA
 }
 
 export const config = {
-  port: process.env.PORT || 3001,
+  port: process.env.PORT || 4000,
   nodeEnv,
-  baseUrl: process.env.BASE_URL || 'http://localhost:3001',
+  baseUrl: process.env.BASE_URL || 'http://localhost:4000',
   jwt: {
     secret: jwtSecret,
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'

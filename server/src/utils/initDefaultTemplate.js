@@ -1,5 +1,5 @@
-// 模板种子工具（阶段八：支持文件夹模板 + 兼容旧版 HTML 文件）
-// 扫描 src/data/ 下的文件夹（多文件模板）和 .html 文件（旧版单文件模板）
+// 模板种子工具
+// 扫描 src/data/ 下的文件夹（多文件模板），自动发现并入库
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
@@ -13,33 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
-// 已知文件夹模板清单
-const FOLDER_MANIFEST = [
-  {
-    folder: 'birthday-card-15-executive-private-banquet',
-    name: '城市私享夜宴',
-    description: '高管专属贺卡，城市夜景与私享晚宴主题，7页全屏沉浸式体验',
-    page_count: 7,
-    employee_level: 'management'
-  }
-];
-
-// 旧版 HTML 文件清单（兼容保留）
-const HTML_MANIFEST = [
-  { file: '蛋糕.html', name: '蛋糕', description: '蛋糕主题贺卡，含蜡烛动画与许愿互动，温馨浪漫风格', match_gender: 'all' },
-  { file: '粉色.html', name: '粉色', description: '粉色浪漫主题贺卡，含玫瑰花瓣飘落与蛋糕动画，适合女性员工', match_gender: 'female' },
-  { file: '礼盒.html', name: '礼盒', description: '礼盒惊喜主题贺卡，含礼盒打开动画与彩带特效，喜庆大方', match_gender: 'all' },
-  { file: '派对.html', name: '派对', description: '生日派对主题贺卡，含气球海洋与庆祝彩带动画，活泼欢快', match_gender: 'all' },
-  { file: '星光.html', name: '星光', description: '星光璀璨主题贺卡，含大星星闪烁与夜空动画，简约温馨', match_gender: 'all' },
-  { file: '红礼盒.html', name: '红礼盒', description: '红金喜庆礼盒主题贺卡，中国风浓郁，适合重要节日与长辈', match_gender: 'all' },
-  { file: '寿桃.html', name: '寿桃', description: '寿桃祝寿主题贺卡，传统中式寿宴风格，适合年长员工', match_gender: 'all' },
-  { file: '烟花.html', name: '烟花', description: '烟花绚烂主题贺卡，含全屏烟花绽放动画，华丽喜庆', match_gender: 'all' },
-  { file: '通用1.html', name: '通用1', description: '简约通用贺卡（风格一），清新淡雅，含蛋糕与祝福文字', match_gender: 'all' },
-  { file: '通用2.html', name: '通用2', description: '华丽通用贺卡（风格二），金色装饰与烟花背景，高端大气', match_gender: 'all' },
-  { file: '通用3.html', name: '通用3', description: '高级质感贺卡（风格三），暗色调+金色点缀，含粒子特效与自动翻页，内嵌实景照片与背景音乐', match_gender: 'all' }
-];
-
-// 旧名称迁移映射
+// 旧名称迁移映射（数据库中存在旧名称模板时自动重命名）
 const NAME_MIGRATION = {
   '青年女性模板': '珊瑚·青春女', '青年男性模板': '青蓝·青春男',
   '壮年女性模板': '樱花·轻熟女', '壮年男性模板': '天蓝·轻熟男',
@@ -127,12 +101,11 @@ const initDefaultTemplate = async () => {
       continue; // 跳过没有 index.html 的目录
     }
 
-    // 查找清单中的元数据
-    const manifestEntry = FOLDER_MANIFEST.find(m => m.folder === folderName);
-    const name = manifestEntry?.name || folderName;
-    const description = manifestEntry?.description || `自动发现的文件夹模板: ${folderName}`;
-    const pageCount = manifestEntry?.page_count || await detectPageCount(folderPath);
-    const employeeLevel = manifestEntry?.employee_level || 'all';
+    // 使用文件夹名作为模板名，自动检测页数
+    const name = folderName;
+    const description = `自动发现的文件夹模板: ${folderName}`;
+    const pageCount = await detectPageCount(folderPath);
+    const employeeLevel = 'all';
     const thumbnail = await getThumbnail(folderPath);
 
     try {
@@ -166,49 +139,6 @@ const initDefaultTemplate = async () => {
         });
         created++;
         logger.info(`[模板] 已创建(文件夹): ${name}`);
-      }
-    } catch (err) {
-      failed++;
-      logger.error(`[模板] ${name} 处理失败: ${err.message}`);
-    }
-  }
-
-  // ── 处理旧版 HTML 文件（兼容） ──
-  const htmlFiles = dirEntries.filter(e => e.isFile() && e.name.endsWith('.html'));
-
-  for (const fileEntry of htmlFiles) {
-    const fileName = fileEntry.name;
-    const manifestEntry = HTML_MANIFEST.find(m => m.file === fileName);
-    const name = manifestEntry?.name || path.basename(fileName, '.html');
-    const description = manifestEntry?.description || `自动发现的模板: ${name}`;
-
-    try {
-      const filePath = path.join(DATA_DIR, fileName);
-      const htmlContent = await fs.readFile(filePath, 'utf-8');
-      const existing = await Template.findOne({ where: { name } });
-
-      if (existing) {
-        if (existing.html_content === htmlContent && !existing.folder_path) {
-          skipped++;
-          continue;
-        }
-        await existing.update({
-          html_content: htmlContent,
-          description: manifestEntry?.description || existing.description,
-          match_gender: manifestEntry?.match_gender || existing.match_gender
-        });
-        updated++;
-        logger.info(`[模板] 已更新(HTML): ${name}`);
-      } else {
-        await Template.create({
-          name,
-          description,
-          match_gender: manifestEntry?.match_gender || 'all',
-          html_content: htmlContent,
-          is_active: true
-        });
-        created++;
-        logger.info(`[模板] 已创建(HTML): ${name}`);
       }
     } catch (err) {
       failed++;
