@@ -1,7 +1,7 @@
 # AGENTS.md — AI 智能体交接指南
 
 > 本文件是新会话的首要参考。新智能体应通读全文后开始工作。
-> 最后更新：2026-07-16 | 项目版本：v7.2.0
+> 最后更新：2026-11-14 | 项目版本：v7.2.0（含未提交的测试增强）
 
 ## 1. 项目概况
 
@@ -17,8 +17,9 @@
 - **v7.0.0 功能优化**：Dashboard 重构 + 监控整合、CSP V2.4.3 接口对接、职级名称统一、祝福语匹配升级、投递状态追踪
 - **v7.1.0 独立监控**：`server/monitor/` 独立进程，detached spawn，后端崩溃时继续检测
 - **v7.2.0 登录修复与安全加固**：修复 JWT base64url 解码导致 token 误判过期（中文 display_name 触发）、CORS 改为白名单模式（localhost + 指定内网 IP）、会话超时实时校验（auth 中间件检查 expires_at 和 last_activity）、恢复登录速率限制（10 次/分钟）
-- **阶段九（部署）**：待开发 — PM2 配置、Nginx 示例、备份脚本、部署文档
-- **阶段十（测试）**：待开发 — 单元测试、集成测试、安全测试、性能测试
+- **测试体系（未提交）**：引入 vitest + supertest（后端）、@vue/test-utils + jsdom（前端），已有 7 个示范测试文件，详见 `测试指南.md`
+- **阶段九（部署）**：本项目待开发 — 姊妹项目 `D:\Projects\birthday-card`（v7.3.0）已完成 deploy/ 脚本（PM2/Nginx/备份/一键部署）和部署指南.md，可直接参考；WSL 部署实例在 `\\wsl.localhost\Ubuntu\home\LYF\project\birthday-card`（有自己的 agents.md）
+- **阶段十（测试）**：部分完成 — 测试基础设施和示范用例已就绪，核心业务逻辑/安全/性能测试待扩展
 
 ### 1.2 协同开发
 
@@ -39,26 +40,30 @@
 | SMS | axios + Provider 抽象 | mock/carrier 双模式，CSP V2.4.3 |
 | 视频录制 | Playwright + FFmpeg | 贺卡 → MP4 (≤2MB) |
 | Excel | xlsx (SheetJS) | 批量导入员工 |
-| 监控 | 独立 ESM 子项目 | `server/monitor/`，4 个检测模块 |
+| 监控 | 独立 ESM 子项目 | `server/monitor/`，4 个检测模块 + 双向守护 |
+| 测试 | vitest + supertest + @vue/test-utils | 见 `测试指南.md` |
 
 ## 3. 开发命令
 
 ```bash
 # 后端 (server/)
 npm install          # 安装依赖
-npm run dev          # node src/app.js（不用 nodemon）
+npm run dev          # node --watch src/app.js（改文件自动重启）
 npm start            # 生产模式
+npm test             # vitest 全部测试
+npm run test:utils   # 只跑工具函数测试（最快，不连数据库）
 
 # 前端 (admin-web/)
 npm install          # 安装依赖
 npm run dev          # Vite 开发服务器 (5173)
 npm run build        # 生产构建
+npm test             # vitest 全部测试
 
 # 监控 (server/monitor/) — 随后端自动启动，也可独立运行
 node src/app.js
 ```
 
-**重要**：修改后端代码后必须 `taskkill /f /im node.exe` 杀旧进程再重启（无 nodemon 热重载）。
+**重要**：`npm run dev` 使用 node --watch，保存文件自动重启，通常无需手动杀进程。仅当手动启动过额外 node 进程占用端口时，才需 `taskkill /f /im node.exe` 清理后重启。测试命令详见 `测试指南.md`。
 
 ## 4. 架构概览
 
@@ -97,31 +102,36 @@ birthday-card-system/
 │   │   ├── utils/              # JWT/密码校验/Excel解析/DB迁移/模板种子
 │   │   └── data/               # 12个模板文件夹（编号1-13，无3号）+ logo.svg + music/
 │   ├── heartbeats/             # 心跳文件（sender.json、monitor.json）
-│   ├── monitor/                # 独立监控项目（4检测模块 + 日志清理）
+│   ├── monitor/                # 独立监控项目（4检测模块 + 双向守护 + 日志清理）
+│   ├── tests/                  # vitest 测试（utils/ + api/，镜像 src 结构）
 │   ├── generated-cards/        # 运行时贺卡目录
 │   └── generated-videos/       # 运行时录制视频
 ├── admin-web/                  # Vue 3 前端
-│   └── src/
-│       ├── api/                # API 封装（8个模块）
-│       ├── views/              # Dashboard/EmployeeList/TemplateList/SendRecords/BlessingList/OperationLogs等
-│       ├── components/         # MainLayout（会话超时+登出）
-│       ├── stores/             # Pinia userStore
-│       └── router/             # 路由配置
+│   ├── src/
+│   │   ├── api/                # API 封装（8个模块）
+│   │   ├── views/              # Dashboard/EmployeeList/TemplateList/SendRecords/BlessingList/OperationLogs等
+│   │   ├── components/         # MainLayout（会话超时+登出）
+│   │   ├── stores/             # Pinia userStore
+│   │   └── router/             # 路由配置
+│   └── tests/                  # vitest 测试（utils/ + stores/ + components/）
 └── uploads/
     └── processTemplates.js     # 模板标准化流水线
 ```
 
 ### 4.2 启动顺序（app.js）
 
-1. `dotenv.config()` — 加载环境变量
-2. `migrateDatabase()` — ALTER TABLE 加列（**必须在 sync 之前**）
-3. `sequelize.sync()` — CREATE TABLE / CREATE INDEX
-4. `initAdmin()` — 创建默认管理员 admin/123456
-5. `initDefaultTemplate()` — 扫描 data/ 文件夹 upsert 模板
-6. `initSenderHeartbeat()` — 写入初始心跳
-7. 注册路由和中间件
-8. `app.listen()` — 启动 HTTP 服务
-9. `spawnMonitor()` — detached spawn 监控子进程
+1. 模块加载阶段：`dotenv.config()`、注册 CORS 白名单 / 静态文件 / API 路由 / 错误处理
+2. `startServer()` 异步启动：
+   - `ensureDirectories()` — 创建 generated-cards/videos/uploads 目录
+   - `migrateDatabase()` — ALTER TABLE 加列（**必须在 sync 之前**）
+   - `sequelize.sync()` — CREATE TABLE / CREATE INDEX
+   - `initDefaultAdmin()` — 创建默认管理员 admin/123456
+   - `initDefaultTemplate()` — 扫描 data/ 文件夹 upsert 模板
+   - `startBirthdayScheduler()` — 启动定时任务（内部调用 `initSenderHeartbeat()` 写入初始心跳）
+   - `app.listen()` — 启动 HTTP 服务
+   - `spawnMonitor()` — detached spawn 监控子进程
+   - 注册 `*/2 * * * *` cron 看门狗，检测监控进程是否存活，异常退出自动重启
+3. 任一步抛错 → `process.exit(1)`
 
 ### 4.3 核心调用链
 
@@ -179,9 +189,9 @@ birthday-card-system/
 - **JWT base64url 解码**：`router/index.ts` 的 `isTokenExpired()` 必须先将 base64url 转标准 base64（`-`→`+`、`_`→`/`、补齐 padding）再 `atob()`，否则含中文 display_name 的 token 解码失败被误判过期
 
 ### 6.5 开发环境
-- 修改后端代码后必须 taskkill 杀旧 Node 进程再重启（无 nodemon）
-- CMD 用单斜杠 `taskkill /f /im node.exe`，Git Bash 用双斜杠 `//f`
-- 重启前必须先杀占用端口的旧进程，否则新进程绑定失败但不报错
+- `npm run dev` 是 node --watch，保存文件自动重启，无需手动杀进程
+- 仅当手动启动过额外 node 进程时才需清理：CMD 用单斜杠 `taskkill /f /im node.exe`，Git Bash 用双斜杠 `//f`
+- 端口被占用时新进程绑定失败；另注意监控的"双向守护"会自动拉起后端（见 §9），手动停后端调试时先停监控
 
 ## 7. 模板系统
 
@@ -211,9 +221,11 @@ birthday-card-system/
 
 - 独立 ESM 项目，不依赖主项目代码
 - 四个检测：HTTP(30s) / 端口(60s) / 心跳(60s) / 数据库(300s)
+- **双向守护**：后端 HTTP 检测失败时，监控自动 spawn 重启后端（5 分钟窗口最多 3 次，两次间隔 ≥60 秒）
 - `detached: true` 脱离后端，后端崩溃时继续检测
 - 日志 `monitor/logs/monitor-YYYY-MM-DD.log`，每天 2:00 清理 30 天前
 - node-cron 注意：5字段最小粒度分钟，6字段支持秒级，混用会出错
+- 与后端看门狗（§4.2）形成双向守护；若改用 PM2 等外部进程管理，注意三层守护叠加会产生游离进程（WSL 部署实例已实测，见其 agents.md §9）
 
 ## 10. 安全要求
 
@@ -253,8 +265,10 @@ birthday-card-system/
 | **README.md** | 项目简介、快速启动、文档索引 |
 | **生日贺卡项目开发文档.md** | 完整技术设计：架构、数据库、API、前端指南 |
 | **项目指南.md** | 新手教程：环境准备、启动步骤、功能使用 |
-| **代码审查与优化总结报告.md** | 122 个问题的发现与修复详情（v1.0 ~ v7.1.0） |
-| **部署指南.md** | 部署技术介绍 + Windows/Linux 部署流程 |
+| **测试指南.md** | 测试入门：运行命令、目录约定、三类测试、如何写新用例 |
+| **代码审查与优化总结报告.md** | 128 个问题的发现与修复详情（v1.0 ~ v7.2.0） |
+
+注：部署文档（部署指南.md）和 deploy/ 脚本在姊妹项目 `D:\Projects\birthday-card`，本项目暂无。
 
 ## 14. 待开发（阶段九/十）
 
@@ -265,8 +279,9 @@ birthday-card-system/
 - 文件路径跨平台兼容验证
 - 部署文档（含 Windows 和 Linux）
 
-**阶段十 — 测试与收尾**：
-- 核心业务逻辑单元测试（sendService、templateMatcher、sanitizeInput）
-- API 接口集成测试
-- 安全测试（密码策略、会话管理、并发限制）
-- 性能测试（大量员工批量发送）
+**阶段十 — 测试与收尾**（基础设施已就绪，见 `测试指南.md`）：
+- [x] vitest 测试框架 + 示范用例（后端 password/jwt/passwordValidator + auth API；前端 constants/user store/Counter 组件）
+- [ ] 核心业务逻辑单元测试（sendService、templateMatcher、sanitizeInput）
+- [ ] API 接口集成测试扩展
+- [ ] 安全测试（密码策略、会话管理、并发限制）
+- [ ] 性能测试（大量员工批量发送）
