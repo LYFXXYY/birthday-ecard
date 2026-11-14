@@ -349,7 +349,6 @@ const loadStats = async () => {
     const data = await getRecordStats()
     Object.assign(stats, data)
   } catch (error) {
-    console.error('加载统计数据失败：', error)
   }
 }
 
@@ -367,7 +366,6 @@ const loadRecords = async () => {
     tableData.value = res.list
     pagination.total = res.total
   } catch (error) {
-    console.error('加载记录列表失败：', error)
     tableData.value = []
     pagination.total = 0
   } finally {
@@ -463,7 +461,6 @@ const handleDelete = async (row: SendRecord) => {
     await Promise.all([loadRecords(), loadStats()])
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除失败：', error)
       ElMessage.error('删除失败')
     }
   }

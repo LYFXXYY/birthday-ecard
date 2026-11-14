@@ -248,16 +248,13 @@ const handleLogin = async () => {
   loading.value = true
     
   try {
-    console.log('[登录] 开始登录...', loginForm.username)
     const response = await login({
       username: loginForm.username,
       password: loginForm.password
     })
-    console.log('[登录] API响应:', JSON.stringify(response))
 
     userStore.setToken(response.token)
     userStore.setUserInfo(response.user)
-    console.log('[登录] Token已存储, localStorage.token =', localStorage.getItem('token'))
 
     // 检查是否必须修改密码（首次登录）
     if (response.must_change_password) {
@@ -280,16 +277,12 @@ const handleLogin = async () => {
     }
 
     ElMessage.success('登录成功')
-    console.log('[登录] 准备导航到首页...')
     try {
       await router.push('/')
-      console.log('[登录] router.push 完成')
     } catch (navErr) {
-      console.warn('[登录] router.push 失败，使用 window.location 兜底:', navErr)
       window.location.href = '/'
     }
   } catch (error: any) {
-    console.error('[登录] 失败：', error)
     ElMessage.error(error?.message || '登录失败，请检查用户名和密码')
   } finally {
     loading.value = false

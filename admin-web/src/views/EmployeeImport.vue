@@ -243,7 +243,6 @@ const handleImport = async () => {
       ElMessage.error('导入失败，请检查文件格式')
     }
   } catch (error: any) {
-    console.error('导入失败：', error)
     ElMessage.error('网络错误或服务器异常，请稍后重试')
   } finally {
     importing.value = false

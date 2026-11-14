@@ -51,7 +51,6 @@ export const useUserStore = defineStore('user', () => {
       try {
         userInfo.value = JSON.parse(savedUser)
       } catch (error) {
-        console.error('解析用户信息失败', error)
       }
     }
   }

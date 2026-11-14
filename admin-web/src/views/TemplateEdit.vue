@@ -187,7 +187,6 @@ const loadTemplateDetail = async () => {
       await loadFolderAssets(detail.folder_path)
     }
   } catch (error) {
-    console.error('加载模板详情失败：', error)
     ElMessage.error('加载模板详情失败')
     router.back()
   } finally {
@@ -207,7 +206,6 @@ const loadFolderAssets = async (folderPath: string) => {
       isImage: asset.isImage
     }))
   } catch (error) {
-    console.error('加载文件夹素材失败：', error)
     folderAssets.value = []
   }
 }
@@ -241,7 +239,6 @@ const handleSubmit = async () => {
       
       router.push('/templates')
     } catch (error) {
-      console.error('提交失败：', error)
       ElMessage.error(isEdit.value ? '修改失败' : '添加失败')
     } finally {
       submitting.value = false
@@ -253,7 +250,6 @@ const loadBlessings = async () => {
   try {
     blessings.value = await getBlessingList({ is_active: 1 })
   } catch (error) {
-    console.error('加载祝福语列表失败：', error)
     blessings.value = []
   }
 }

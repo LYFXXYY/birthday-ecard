@@ -88,7 +88,6 @@ const loadBlessingDetail = async () => {
       is_active: detail.is_active
     })
   } catch (error) {
-    console.error('加载祝福详情失败：', error)
     ElMessage.error('加载祝福详情失败')
     router.back()
   }
@@ -110,7 +109,6 @@ const handleSubmit = async () => {
     }
     router.push('/blessings')
   } catch (error) {
-    console.error('提交失败：', error)
     ElMessage.error(isEdit.value ? '修改失败' : '添加失败')
   } finally {
     submitting.value = false

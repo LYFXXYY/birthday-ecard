@@ -125,11 +125,9 @@ function isTokenExpired(token: string): boolean {
 router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
   const token = userStore.getToken()
-  console.log('[路由守卫] to:', to.path, 'token:', token ? token.substring(0, 20) + '...' : 'null')
 
   // 有 token 但已过期 → 清除并跳转登录
   if (token && isTokenExpired(token)) {
-    console.log('[路由守卫] token已过期，清除并跳转登录')
     userStore.clearAuth()
     next('/login')
     return
@@ -137,17 +135,14 @@ router.beforeEach((to, _from, next) => {
 
   // 需要登录的页面
   if (to.meta.requiresAuth && !token) {
-    console.log('[路由守卫] 需要认证但无token，跳转登录')
     next('/login')
   } 
   // 未登录状态才能访问的页面（如登录页）
   else if (to.meta.requiresGuest && token) {
-    console.log('[路由守卫] 已有token，从登录页跳转到首页')
     next('/')
   } 
   // 其他情况正常跳转
   else {
-    console.log('[路由守卫] 放行')
     next()
   }
 })

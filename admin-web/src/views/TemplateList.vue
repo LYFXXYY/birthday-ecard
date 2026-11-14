@@ -102,7 +102,6 @@ const loadTemplates = async () => {
   try {
     templates.value = await getTemplateList()
   } catch (error) {
-    console.error('加载模板列表失败：', error)
     // 接口异常时使用默认兜底数据
     templates.value = []
   } finally {
@@ -134,7 +133,6 @@ const handleDelete = async (template: Template) => {
     loadTemplates()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除失败：', error)
       ElMessage.error('删除失败')
     }
   }
@@ -157,7 +155,6 @@ const handleBackfillBlessings = async () => {
     loadTemplates()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('补配祝福语失败：', error)
       ElMessage.error('补配祝福语失败')
     }
   }

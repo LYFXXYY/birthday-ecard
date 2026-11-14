@@ -69,7 +69,6 @@ const loadBlessings = async () => {
   try {
     blessings.value = await getBlessingList()
   } catch (error) {
-    console.error('加载祝福语失败：', error)
     blessings.value = []
   } finally {
     loading.value = false
@@ -102,7 +101,6 @@ const handleDelete = async (row: Blessing) => {
     loadBlessings()
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('删除失败：', error)
       ElMessage.error('删除失败')
     }
   }

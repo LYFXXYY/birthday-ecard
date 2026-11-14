@@ -168,7 +168,6 @@ const loadLogs = async () => {
     logs.value = result.list
     total.value = result.total
   } catch (error) {
-    console.error('加载系统日志失败：', error)
     logs.value = []
   } finally {
     loading.value = false
@@ -179,7 +178,6 @@ const loadStats = async () => {
   try {
     stats.value = await getSystemLogStats()
   } catch (error) {
-    console.error('加载统计失败：', error)
   }
 }
 

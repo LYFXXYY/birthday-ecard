@@ -380,7 +380,6 @@ const loadData = async () => {
       // 重新赋值触发 Vue 响应更新
       sentEmployeeIds.value = new Set(sentEmployeeIds.value)
     } catch (e) {
-      console.error('[仪表盘] 查询今日发送记录失败:', e)
     }
 
     // 获取今日 + 明日生日员工
@@ -392,7 +391,6 @@ const loadData = async () => {
       initMonthlyChart(monthlyData.monthly)
     }
   } catch (error) {
-    console.error('加载数据失败：', error)
   } finally {
     loading.value = false
   }
@@ -411,7 +409,6 @@ const loadMonitorData = async () => {
     extendedStats.value = extendedData
     monitorLastRefresh.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
   } catch (e) {
-    console.error('[仪表盘] 加载监控数据失败:', e)
   }
 }
 
@@ -421,7 +418,6 @@ const refreshBirthdays = async () => {
     todayBirthdays.value = await getTodayBirthdayEmployees()
     stats.todayBirthdays = todayBirthdays.value.length
   } catch (error) {
-    console.error('获取今日生日员工失败：', error)
     todayBirthdays.value = []
     stats.todayBirthdays = 0
   }
@@ -433,7 +429,6 @@ const refreshTomorrowBirthdays = async () => {
     const list = await getTomorrowBirthdayEmployees()
     stats.tomorrowBirthdays = list.length
   } catch (error) {
-    console.error('获取明日生日员工失败：', error)
     stats.tomorrowBirthdays = 0
   }
 }

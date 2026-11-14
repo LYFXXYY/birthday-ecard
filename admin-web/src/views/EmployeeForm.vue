@@ -171,7 +171,6 @@ const loadTemplates = async () => {
   try {
     templates.value = await getTemplateList()
   } catch (error) {
-    console.error('加载模板列表失败：', error)
   }
 }
 
@@ -196,7 +195,6 @@ const loadEmployeeDetail = async () => {
       default_template_id: detail.default_template_id
     })
   } catch (error) {
-    console.error('加载员工详情失败：', error)
     ElMessage.error('加载员工详情失败')
     router.back()
   } finally {
@@ -223,7 +221,6 @@ const handleSubmit = async () => {
       
       router.push('/employees')
     } catch (error) {
-      console.error('提交失败：', error)
       ElMessage.error(isEdit.value ? '修改失败' : '添加失败')
     } finally {
       submitting.value = false
